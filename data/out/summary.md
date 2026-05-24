@@ -11,22 +11,22 @@ Bear window used for relative-strength screen: 2025-10-05 to 2026-03-08 (top-200
 - First seen in dataset: 2025-11-16 at rank 197
 - Best rank reached: 77
 - Worst rank reached: 197
-- Current rank (2026-05-24): 104
-- Full-window rank delta: +93
+- Current rank (2026-05-24): 103
+- Full-window rank delta: +94
 - Bear-window rank delta (2025-10-05 -> 2026-03-08): +120  (rank 197 -> 77)
 - Weeks present: 28
-- Note: current rank is 27 below best historical. Possible quiet-accumulator.
+- Note: current rank is 26 below best historical. Possible quiet-accumulator.
 
 ### DCR (Decred)
 
 - First seen in dataset: 2024-06-09 at rank 196
 - Best rank reached: 79
 - Worst rank reached: 200
-- Current rank (2026-05-24): 120
-- Full-window rank delta: +76
+- Current rank (2026-05-24): 122
+- Full-window rank delta: +74
 - Bear-window rank delta (2025-10-05 -> 2026-03-08): +86  (rank 166 -> 80)
 - Weeks present: 74
-- Note: current rank is 41 below best historical. Possible quiet-accumulator.
+- Note: current rank is 43 below best historical. Possible quiet-accumulator.
 
 ### BARD (Lombard)
 
@@ -74,11 +74,11 @@ Bear window used for relative-strength screen: 2025-10-05 to 2026-03-08 (top-200
 - First seen in dataset: 2024-06-23 at rank 95
 - Best rank reached: 69
 - Worst rank reached: 181
-- Current rank (2026-05-24): 91
-- Full-window rank delta: +4
+- Current rank (2026-05-24): 93
+- Full-window rank delta: +2
 - Bear-window rank delta (2025-10-05 -> 2026-03-08): +51  (rank 122 -> 71)
 - Weeks present: 101
-- Note: current rank is 22 below best historical. Possible quiet-accumulator.
+- Note: current rank is 24 below best historical. Possible quiet-accumulator.
 
 ### GNO (Gnosis)
 
@@ -96,11 +96,11 @@ Bear window used for relative-strength screen: 2025-10-05 to 2026-03-08 (top-200
 - First seen in dataset: 2025-07-06 at rank 126
 - Best rank reached: 92
 - Worst rank reached: 196
-- Current rank (2026-05-24): 129
-- Full-window rank delta: -3
+- Current rank (2026-05-24): 132
+- Full-window rank delta: -6
 - Bear-window rank delta (2025-10-05 -> 2026-03-08): +43  (rank 176 -> 133)
 - Weeks present: 44
-- Note: current rank is 37 below best historical. Possible quiet-accumulator.
+- Note: current rank is 40 below best historical. Possible quiet-accumulator.
 
 ### DASH (Dash)
 

@@ -143,7 +143,13 @@ def compute_float(df: pd.DataFrame) -> pd.DataFrame:
 def coin_metrics(df: pd.DataFrame, window: tuple[pd.Timestamp, pd.Timestamp] | None = None) -> pd.DataFrame:
     """Compute start/end/best/worst rank per coin over the given (date-inclusive) window.
     Also captures current FDV / MC-FDV ratio (= float %) from the most recent row in window.
+    Sets is_stale=True based on the FULL dataset's last-seen date (not the windowed one),
+    so a coin measured during the bear window but still active today is NOT stale.
     """
+    full_latest = df["date"].max()
+    # actual last-seen across full dataset (used for staleness check)
+    actual_last_seen = df.groupby("symbol")["date"].max()
+
     sub = df if window is None else df[(df["date"] >= window[0]) & (df["date"] <= window[1])]
     grp = sub.sort_values("date").groupby("symbol")
     out = grp.agg(
@@ -164,6 +170,9 @@ def coin_metrics(df: pd.DataFrame, window: tuple[pd.Timestamp, pd.Timestamp] | N
     ).reset_index()
     out["rank_delta"] = out["start_rank"] - out["end_rank"]  # positive = climber
     out["is_capped"] = out["max_supply"].notna()
+    out["actual_last_seen"] = out["symbol"].map(actual_last_seen)
+    out["days_since_last_seen"] = (full_latest - out["actual_last_seen"]).dt.days
+    out["is_stale"] = out["days_since_last_seen"] > 14
     return out
 
 

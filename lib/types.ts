@@ -18,6 +18,9 @@ export type ClimberRow = {
   circulating_supply?: number | null;
   is_capped?: boolean;
   dilution_multiple?: number;
+  // staleness (coin hasn't been in top 200 within ~14d of latest snapshot)
+  days_since_last_seen?: number;
+  is_stale?: boolean;
   // quiet accumulators extra
   bear_delta?: number;
   gap_to_best?: number;

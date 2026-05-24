@@ -135,12 +135,22 @@ export default function RankTable({
                       }`}
                     >
                       {isSymbol ? (
-                        <Link
-                          href={`/coin/${encodeURIComponent(r.symbol)}`}
-                          className="font-semibold hover:text-[var(--accent)]"
-                        >
-                          {display}
-                        </Link>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Link
+                            href={`/coin/${encodeURIComponent(r.symbol)}`}
+                            className="font-semibold hover:text-[var(--accent)]"
+                          >
+                            {display}
+                          </Link>
+                          {r.is_stale && (
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--danger)] text-[var(--danger)] font-mono"
+                              title={`Not seen in top 200 for ${r.days_since_last_seen} days. Likely delisted / catastrophic exit.`}
+                            >
+                              ⚠ stale {r.days_since_last_seen}d
+                            </span>
+                          )}
+                        </span>
                       ) : (
                         display
                       )}

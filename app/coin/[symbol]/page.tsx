@@ -22,6 +22,11 @@ export default async function CoinPage({ params }: { params: Promise<{ symbol: s
   const last = traj[traj.length - 1];
   const best = traj.reduce((m, p) => (p.rank < m.rank ? p : m), traj[0]);
   const worst = traj.reduce((m, p) => (p.rank > m.rank ? p : m), traj[0]);
+  // staleness: coin's last data point vs latest snapshot in dataset
+  const lastDateMs = new Date(last.date).getTime();
+  const latestDateMs = new Date(metadata.lastDate).getTime();
+  const daysStale = Math.round((latestDateMs - lastDateMs) / 86400000);
+  const isStale = daysStale > 14;
 
   // membership in each table
   const buckets: { name: string; href: string; tone?: "good" | "bad" }[] = [];
@@ -73,6 +78,19 @@ export default async function CoinPage({ params }: { params: Promise<{ symbol: s
           </div>
         )}
       </div>
+
+      {isStale && (
+        <div className="border-2 border-[var(--danger)] bg-[var(--danger)]/10 rounded-lg p-4 text-sm">
+          <div className="font-bold text-[var(--danger)] mb-1">
+            ⚠ Delisted from top 200 ({daysStale} days ago)
+          </div>
+          <div className="text-[var(--fg-dim)]">
+            Last appearance in any snapshot: {last.date}. The numbers below reflect that
+            last-known state, not current reality. Likely candidates: hack, depeg, project
+            abandonment, or coordinated dump. Worth investigating what happened around {last.date}.
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat label="First seen" value={fmtDate(first.date)} sub={`rank ${first.rank}`} />

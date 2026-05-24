@@ -100,7 +100,9 @@ def apply_noise_filter(df: pd.DataFrame) -> pd.DataFrame:
     timeline whenever CMC mistags them (e.g. LINK tagged 'tokenized-stock' for
     a stretch when Chainlink launched an RWA oracle product)."""
     def row_is_noise(tags_str):
-        return bool(set((tags_str or "").split(",")) & NOISE_TAGS)
+        if tags_str is None or (isinstance(tags_str, float) and pd.isna(tags_str)) or not tags_str:
+            return False
+        return bool(set(tags_str.split(",")) & NOISE_TAGS)
     df = df.copy()
     df["_row_noise"] = df["tags"].apply(row_is_noise)
     noise_rate = df.groupby("symbol")["_row_noise"].mean()

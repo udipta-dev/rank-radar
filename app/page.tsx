@@ -1,4 +1,5 @@
 import Link from "next/link";
+import CoinSearch from "@/components/CoinSearch";
 import { getData } from "@/lib/data";
 import { fmtMcap, fmtDelta, fmtDate } from "@/lib/format";
 
@@ -63,16 +64,17 @@ function TopList({
 }
 
 export default function Home() {
-  const { metadata: meta, tables, summaryMd } = getData();
+  const { metadata: meta, tables, summaryMd, nameMap } = getData();
   const bear = meta.bearWindow;
 
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold mb-2">rank-radar</h1>
-        <p className="text-[var(--fg-dim)]">
+        <p className="text-[var(--fg-dim)] mb-4">
           Tracking structural rank movement of top crypto assets to find quiet winners and dead weight.
         </p>
+        <CoinSearch nameMap={nameMap} />
       </header>
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">

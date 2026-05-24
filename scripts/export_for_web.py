@@ -17,11 +17,12 @@ import pandas as pd
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data"
 OUT = DATA / "out"
+PUBLIC = ROOT / "public"
 TARGET = DATA / "web.json"
 
-# How many coins get full trajectory data attached. Picked from the union of
-# top climbers + quiet accumulators + a few top-current-rank.
-TRAJECTORY_LIMIT = 150
+# Include trajectories for ALL coins in the post-filter universe so the site
+# can render a /coin/[symbol] page for anything. ~366 coins × ~100 snapshots
+# = ~2.5MB JSON, still cacheable.
 
 
 def _clean(v):
@@ -71,27 +72,25 @@ def main():
         "stableHolders": load_table("stable_holders"),
     }
 
-    # build trajectory set: union of climbers/quiet/current-top
-    syms = set()
-    for tbl in ["climbersOverall", "climbersBear", "quietAccumulators"]:
-        syms.update(r["symbol"] for r in tables[tbl][:50])
+    # include every coin so /coin/[symbol] works for anything we have data on
     latest = cleaned["date"].max()
-    syms.update(cleaned[cleaned["date"] == latest].nsmallest(50, "cmc_rank")["symbol"])
-    syms = list(syms)[:TRAJECTORY_LIMIT]
-
-    traj = cleaned[cleaned["symbol"].isin(syms)].sort_values("date")
+    traj = cleaned.sort_values("date")
     trajectories = {}
     name_map = {}
     for sym, g in traj.groupby("symbol"):
-        trajectories[sym] = [
-            {
+        pts = []
+        for d, r, m, p in zip(g["date"], g["cmc_rank"], g["market_cap_usd"], g["price_usd"]):
+            if pd.isna(r):
+                continue
+            pts.append({
                 "date": d.isoformat()[:10],
                 "rank": int(r),
                 "mcap": float(m) if pd.notna(m) else None,
                 "price": float(p) if pd.notna(p) else None,
-            }
-            for d, r, m, p in zip(g["date"], g["cmc_rank"], g["market_cap_usd"], g["price_usd"])
-        ]
+            })
+        if not pts:
+            continue
+        trajectories[sym] = pts
         name_map[sym] = g["name"].iloc[-1]
 
     # heatmap matrix for top-50 current
@@ -141,6 +140,15 @@ def main():
           f"{doc['metadata']['coinCount']} coins")
     print(f"  trajectories: {len(trajectories)} coins")
     print(f"  tables: {[(k, len(v)) for k,v in tables.items()]}")
+
+    # mirror matplotlib charts into public/ so Next.js serves them
+    import shutil
+    PUBLIC.mkdir(exist_ok=True)
+    copied = 0
+    for png in OUT.glob("chart_*.png"):
+        shutil.copy2(png, PUBLIC / png.name)
+        copied += 1
+    print(f"  copied {copied} chart PNGs to public/")
 
 
 if __name__ == "__main__":

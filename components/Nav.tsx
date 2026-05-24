@@ -7,6 +7,7 @@ const links = [
   { href: "/decliners", label: "Decliners" },
   { href: "/holders", label: "Stable Holders" },
   { href: "/heatmap", label: "Heatmap" },
+  { href: "/charts", label: "Charts" },
 ];
 
 export default function Nav() {

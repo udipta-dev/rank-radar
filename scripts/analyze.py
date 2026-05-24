@@ -26,7 +26,9 @@ import matplotlib.colors as mcolors
 
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data"
-SRC = DATA / "snapshots.parquet"
+RAW_WEEKLY = DATA / "raw"
+RAW_DAILY = DATA / "daily"
+PARQUET = DATA / "snapshots.parquet"
 OUT = DATA / "out"
 OUT.mkdir(exist_ok=True, parents=True)
 
@@ -39,9 +41,56 @@ NOISE_TAGS = {
 MANUAL_DROP = {"WTHETA"}  # one wrapped token that slipped past cmcRank dedup
 
 
+def _flatten_snapshot(snap: dict) -> list[dict]:
+    """Convert a raw scraped snapshot dict into flat rows. Tolerates both the
+    weekly historical shape and the daily live shape."""
+    out = []
+    snap_date = snap["date"]
+    for t in snap["tokens"]:
+        usd = (t.get("quote") or {}).get("USD", {})
+        out.append({
+            "date": snap_date,
+            "cmc_rank": t.get("cmcRank"),
+            "id": t.get("id"),
+            "symbol": t.get("symbol"),
+            "name": t.get("name"),
+            "slug": t.get("slug"),
+            "price_usd": usd.get("price"),
+            "market_cap_usd": usd.get("marketCap"),
+            "volume_24h_usd": usd.get("volume24h"),
+            "pct_change_24h": usd.get("percentChange24h"),
+            "pct_change_7d": usd.get("percentChange7d"),
+            "circulating_supply": t.get("circulatingSupply"),
+            "total_supply": t.get("totalSupply"),
+            "max_supply": t.get("maxSupply"),
+            "num_market_pairs": t.get("numMarketPairs"),
+            "date_added": t.get("dateAdded"),
+            "tags": ",".join(t.get("tags") or []) or None,
+        })
+    return out
+
+
 def load() -> pd.DataFrame:
-    df = pd.read_parquet(SRC)
+    """Build combined long table from weekly historical + daily live snapshots.
+    Writes data/snapshots.parquet as a side effect for downstream tooling."""
+    import json
+    rows = []
+    for d in sorted(RAW_WEEKLY.glob("*.json")):
+        rows.extend(_flatten_snapshot(json.loads(d.read_text())))
+    daily_count = 0
+    if RAW_DAILY.exists():
+        for d in sorted(RAW_DAILY.glob("*.json")):
+            rows.extend(_flatten_snapshot(json.loads(d.read_text())))
+            daily_count += 1
+    df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"])
+    # if both a weekly and daily snapshot exist for the same calendar date, keep daily (more recent intra-day data)
+    df = df.sort_values(["date", "cmc_rank"]).drop_duplicates(
+        subset=["date", "symbol"], keep="last"
+    ).reset_index(drop=True)
+    df.to_parquet(PARQUET, index=False)
+    print(f"  loaded {len(df):,} rows from {RAW_WEEKLY.name} ({len(list(RAW_WEEKLY.glob('*.json')))} weekly) "
+          f"+ {daily_count} daily files; {df['date'].nunique()} unique dates")
     return df
 
 

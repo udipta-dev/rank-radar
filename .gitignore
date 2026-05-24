@@ -13,9 +13,8 @@
 __pycache__/
 *.pyc
 
-# data: keep parquet + json + raw snapshots committed (they ARE the source of truth)
-# but skip the chart pngs since the site renders charts itself
-data/out/*.png
+# data: keep everything (parquet, raw snapshots, PNGs) committed.
+# PNG charts are served via public/charts/ symlink — see below.
 
 # misc
 .DS_Store

@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --bg: #0b0d10;
+  --bg-elev: #14181d;
+  --fg: #e6e8eb;
+  --fg-dim: #8a93a0;
+  --border: #232a32;
+  --accent: #67e8a3;
+  --warn: #f7c668;
+  --danger: #f97373;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: "tnum" 1;
+}
+
+.font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}

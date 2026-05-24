@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-const CELL = 14;
+const ROW_HEIGHT = 14;
 const SYMBOL_COL = 80;
 
 // Saturated 3-stop palette: vivid emerald → amber → vivid crimson.
@@ -84,18 +84,26 @@ export default function Heatmap({
         </div>
       </div>
 
-      <div className="relative overflow-x-auto">
-        {/* x axis date labels */}
+      <div className="relative">
+        {/* x axis date labels — stretches to container width, no scroll */}
         <div
           className="relative h-5 text-[10px] text-[var(--fg-dim)]"
-          style={{ marginLeft: SYMBOL_COL, width: dates.length * CELL }}
+          style={{ marginLeft: SYMBOL_COL }}
         >
           {dates.map((d, i) =>
             tickSet.has(i) ? (
               <span
                 key={i}
-                className="absolute"
-                style={{ left: i * CELL, transform: "translateX(-50%)" }}
+                className="absolute whitespace-nowrap"
+                style={{
+                  left: `${(i / (dates.length - 1)) * 100}%`,
+                  transform:
+                    i === 0
+                      ? "translateX(0)"
+                      : i === dates.length - 1
+                        ? "translateX(-100%)"
+                        : "translateX(-50%)",
+                }}
               >
                 {d.slice(2, 7)}
               </span>
@@ -103,7 +111,7 @@ export default function Heatmap({
           )}
         </div>
 
-        {/* grid rows: each row is a single CSS gradient (smooth horizontally),
+        {/* grid rows: each row is a single CSS gradient stretched to fit,
             with an invisible per-cell hover layer on top */}
         <div className="relative">
           {symbols.map((sym, ri) => {
@@ -116,33 +124,40 @@ export default function Heatmap({
                 return `${colorForRank(rank)} ${pct}%`;
               })
               .join(", ");
+            const dim = hover != null && hover.row !== ri;
             return (
-              <div key={sym} className="flex items-center" style={{ height: CELL }}>
+              <div
+                key={sym}
+                className="flex items-center"
+                style={{
+                  height: ROW_HEIGHT,
+                  opacity: dim ? 0.15 : 1,
+                  transition: "opacity 120ms ease",
+                }}
+              >
                 <Link
                   href={`/coin/${encodeURIComponent(sym)}`}
-                  className="font-mono text-xs hover:text-[var(--accent)] whitespace-nowrap"
+                  className="font-mono text-xs hover:text-[var(--accent)] whitespace-nowrap shrink-0"
                   style={{
                     width: SYMBOL_COL,
                     paddingRight: 8,
                     textAlign: "right",
-                    position: "sticky",
-                    left: 0,
-                    background: "var(--bg-elev)",
-                    zIndex: 2,
                   }}
                 >
                   {sym}
                 </Link>
                 <div
-                  className="relative"
+                  className="relative flex-1"
                   style={{
-                    width: n * CELL,
-                    height: CELL,
+                    height: ROW_HEIGHT,
                     background: `linear-gradient(to right, ${stops})`,
                   }}
                 >
-                  {/* hover detection layer */}
-                  <div className="absolute inset-0 flex">
+                  {/* hover detection layer: equal-width columns spanning the row */}
+                  <div
+                    className="absolute inset-0 grid"
+                    style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}
+                  >
                     {row.map((_, ci) => (
                       <div
                         key={ci}
@@ -159,8 +174,7 @@ export default function Heatmap({
                           setPointer(null);
                         }}
                         style={{
-                          width: CELL,
-                          height: CELL,
+                          height: ROW_HEIGHT,
                           cursor: "crosshair",
                           outline:
                             hover?.row === ri && hover?.col === ci

@@ -1,0 +1,52 @@
+name: Daily data refresh
+
+on:
+  schedule:
+    # 02:00 UTC daily (~07:30 IST) — fresh data by morning
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps
+        run: pip install requests pandas pyarrow matplotlib
+
+      - name: Scrape today's live snapshot (CMC current top-200)
+        run: python scripts/scrape_daily.py
+
+      - name: Scrape any new weekly historical snapshot (only Sundays add new data)
+        run: python scripts/scrape_cmc_historical.py
+        continue-on-error: true
+
+      - name: Run analysis (combines weekly + daily)
+        run: python scripts/analyze.py
+
+      - name: Export web.json
+        run: python scripts/export_for_web.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "No data changes."
+          else
+            git commit -m "data: refresh $(date -u +%Y-%m-%d)"
+            git push
+          fi

@@ -1,6 +1,20 @@
 import type { Metadata } from "next";
+import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import Nav from "@/components/Nav";
 import "./globals.css";
+
+const sans = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "rank-radar",
@@ -9,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
       <body>
         <Nav />
         <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>

@@ -31,11 +31,8 @@ export default function TrajectoryChart({
   height?: number;
 }) {
   const allSymbols = series.map((s) => s.symbol);
-  // Multi-coin charts start EMPTY so user builds up the comparison from a
-  // clean slate. Single-coin charts (e.g. on /coin/[symbol]) stay visible.
-  const [hidden, setHidden] = useState<Set<string>>(() =>
-    allSymbols.length > 1 ? new Set(allSymbols) : new Set(),
-  );
+  // Default: everything visible. Hide all to start a clean comparison.
+  const [hidden, setHidden] = useState<Set<string>>(new Set());
   const visibleCount = allSymbols.length - hidden.size;
 
   const toggle = (sym: string, e?: React.MouseEvent) => {
@@ -137,22 +134,22 @@ export default function TrajectoryChart({
       <div className="mt-3 flex items-center gap-2 flex-wrap border-t border-[var(--border)] pt-3">
         <span className="text-xs text-[var(--fg-dim)] mr-2">
           {visibleCount === 0
-            ? `Pick coins to compare ↓  (${allSymbols.length} available)`
+            ? `Nothing visible — click a coin below to add it`
             : `${visibleCount} of ${allSymbols.length} visible`}
         </span>
+        <button
+          onClick={hideAll}
+          disabled={hidden.size === allSymbols.length}
+          className="px-2 py-0.5 text-xs rounded border border-[var(--border)] text-[var(--fg-dim)] hover:text-[var(--fg)] disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Hide all
+        </button>
         <button
           onClick={showAll}
           disabled={hidden.size === 0}
           className="px-2 py-0.5 text-xs rounded border border-[var(--border)] text-[var(--fg-dim)] hover:text-[var(--fg)] disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Show all
-        </button>
-        <button
-          onClick={hideAll}
-          disabled={hidden.size === allSymbols.length}
-          className="px-2 py-0.5 text-xs rounded border border-[var(--border)] text-[var(--fg-dim)] hover:text-[var(--fg)] disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          Clear
         </button>
         <span className="text-xs text-[var(--fg-dim)] ml-2">
           tip: alt-click a coin to isolate it

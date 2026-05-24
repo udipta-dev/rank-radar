@@ -15,10 +15,11 @@
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-feature-settings: "tnum" 1;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: "tnum" 1, "ss01" 1;
 }
 
 .font-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-feature-settings: "tnum" 1, "zero" 1;
 }

@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ClimberRow } from "@/lib/types";
-import { fmtMcap, fmtDelta, fmtDate } from "@/lib/format";
+import { fmtMcap, fmtDelta, fmtDate, fmtPct, fmtMultiple } from "@/lib/format";
 
-type FormatType = "mcap" | "delta" | "date" | "number" | "string";
+type FormatType = "mcap" | "delta" | "date" | "pct" | "multiple" | "number" | "string";
 
 export type Column = {
   key: keyof ClimberRow;
@@ -23,8 +23,9 @@ const defaultColumns: Column[] = [
   { key: "best_rank", label: "Best", numeric: true },
   { key: "worst_rank", label: "Worst", numeric: true },
   { key: "rank_delta", label: "Δ rank", numeric: true, formatType: "delta" },
-  { key: "avg_mcap_usd", label: "Avg mcap", numeric: true, formatType: "mcap" },
-  { key: "first_date", label: "First seen", formatType: "date" },
+  { key: "current_mcap_usd", label: "MCAP", numeric: true, formatType: "mcap" },
+  { key: "current_fdv_usd", label: "FDV", numeric: true, formatType: "mcap" },
+  { key: "current_mc_fdv", label: "Float %", numeric: true, formatType: "pct" },
 ];
 
 function formatValue(v: unknown, type?: FormatType): string {
@@ -33,6 +34,8 @@ function formatValue(v: unknown, type?: FormatType): string {
     case "mcap": return fmtMcap(v as number);
     case "delta": return fmtDelta(v as number);
     case "date": return fmtDate(v as string);
+    case "pct": return fmtPct(v as number);
+    case "multiple": return fmtMultiple(v as number);
     default: return String(v);
   }
 }

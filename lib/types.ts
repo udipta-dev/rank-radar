@@ -10,6 +10,14 @@ export type ClimberRow = {
   worst_rank: number;
   avg_mcap_usd: number;
   rank_delta: number;
+  // FDV / float fields (present on all rows after analyze.py upgrade)
+  current_mcap_usd?: number;
+  current_fdv_usd?: number;
+  current_mc_fdv?: number;
+  max_supply?: number | null;
+  circulating_supply?: number | null;
+  is_capped?: boolean;
+  dilution_multiple?: number;
   // quiet accumulators extra
   bear_delta?: number;
   gap_to_best?: number;
@@ -22,6 +30,16 @@ export type TrajectoryPoint = {
   rank: number;
   mcap: number | null;
   price: number | null;
+};
+
+export type CurrentMetrics = {
+  mcap: number | null;
+  fdv: number | null;
+  mcFdv: number | null;
+  price: number | null;
+  circulatingSupply: number | null;
+  maxSupply: number | null;
+  isCapped: boolean;
 };
 
 export type BearWindow = {
@@ -47,9 +65,13 @@ export type WebData = {
     quietAccumulators: ClimberRow[];
     persistentDecliners: ClimberRow[];
     stableHolders: ClimberRow[];
+    overhangRisk: ClimberRow[];
+    lowFloatDecliners: ClimberRow[];
+    highConvictionClimbers: ClimberRow[];
   };
   trajectories: Record<string, TrajectoryPoint[]>;
   nameMap: Record<string, string>;
+  currentMetrics: Record<string, CurrentMetrics>;
   heatmap: {
     symbols: string[];
     dates: string[];

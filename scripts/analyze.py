@@ -126,9 +126,21 @@ def find_bear_window(df: pd.DataFrame) -> tuple[pd.Timestamp, pd.Timestamp, pd.D
 
 
 # --- per-coin metrics over a window ---------------------------------------
+def compute_float(df: pd.DataFrame) -> pd.DataFrame:
+    """Add fdv and mc_fdv (= float pct) columns. FDV = price * max_supply where
+    max_supply is set; otherwise FDV = market_cap (i.e. uncapped tokens are
+    treated as fully diluted)."""
+    df = df.copy()
+    df["fdv"] = df["price_usd"] * df["max_supply"]
+    df["fdv"] = df["fdv"].fillna(df["market_cap_usd"])  # uncapped: FDV = MCAP
+    df["mc_fdv"] = df["market_cap_usd"] / df["fdv"]
+    df["mc_fdv"] = df["mc_fdv"].clip(upper=1.0)  # numerical noise can push slightly above 1
+    return df
+
+
 def coin_metrics(df: pd.DataFrame, window: tuple[pd.Timestamp, pd.Timestamp] | None = None) -> pd.DataFrame:
     """Compute start/end/best/worst rank per coin over the given (date-inclusive) window.
-    If window is None, use the full dataset range.
+    Also captures current FDV / MC-FDV ratio (= float %) from the most recent row in window.
     """
     sub = df if window is None else df[(df["date"] >= window[0]) & (df["date"] <= window[1])]
     grp = sub.sort_values("date").groupby("symbol")
@@ -142,8 +154,14 @@ def coin_metrics(df: pd.DataFrame, window: tuple[pd.Timestamp, pd.Timestamp] | N
         best_rank=("cmc_rank", "min"),
         worst_rank=("cmc_rank", "max"),
         avg_mcap_usd=("market_cap_usd", "mean"),
+        current_mcap_usd=("market_cap_usd", "last"),
+        current_fdv_usd=("fdv", "last"),
+        current_mc_fdv=("mc_fdv", "last"),
+        max_supply=("max_supply", "last"),
+        circulating_supply=("circulating_supply", "last"),
     ).reset_index()
     out["rank_delta"] = out["start_rank"] - out["end_rank"]  # positive = climber
+    out["is_capped"] = out["max_supply"].notna()
     return out
 
 
@@ -188,6 +206,34 @@ def table_stable_holders(df, n=50, min_snapshots=80):
     m = m[m["snapshots"] >= min_snapshots]
     m["rank_range"] = m["worst_rank"] - m["best_rank"]
     return m.sort_values("rank_range", ascending=True).head(n)
+
+
+def table_overhang_risk(df, n=50, max_float=0.40):
+    """Coins with the biggest unlock cliffs ahead. Low MC/FDV ratio = lots of
+    supply still to come = potential dilution headwind. Hard-capped only
+    (uncapped tokens have MC/FDV = 1.0 by our convention so they're not at
+    immediate unlock risk in the same way)."""
+    m = coin_metrics(df)
+    m = m[m["is_capped"] & (m["current_mc_fdv"] <= max_float)]
+    m["dilution_multiple"] = 1.0 / m["current_mc_fdv"]
+    return m.sort_values("current_mc_fdv", ascending=True).head(n)
+
+
+def table_low_float_decliners(df, n=50, max_float=0.40, min_snapshots=10):
+    """Coins that are BOTH declining in rank AND have heavy unlock pressure.
+    These are the highest-mortality candidates per user thesis: low-float
+    tokens die before they survive."""
+    m = coin_metrics(df)
+    m = m[m["is_capped"] & (m["current_mc_fdv"] <= max_float) & (m["snapshots"] >= min_snapshots) & (m["rank_delta"] < 0)]
+    return m.sort_values(["rank_delta", "current_mc_fdv"], ascending=[True, True]).head(n)
+
+
+def table_high_conviction_climbers(df, n=50, max_float=0.50, min_delta=15, min_snapshots=10):
+    """The opposite: climbing in rank DESPITE heavy unlock pressure. These are
+    the strongest survival signals — buyers absorbing unlocks AND pushing rank."""
+    m = coin_metrics(df)
+    m = m[m["is_capped"] & (m["current_mc_fdv"] <= max_float) & (m["snapshots"] >= min_snapshots) & (m["rank_delta"] >= min_delta)]
+    return m.sort_values(["rank_delta", "current_mc_fdv"], ascending=[False, True]).head(n)
 
 
 # --- charts ----------------------------------------------------------------
@@ -341,8 +387,11 @@ def main():
 
     print("\nNoise filter:")
     df = apply_noise_filter(df)
+    df = compute_float(df)
     df.to_parquet(OUT / "cleaned.parquet", index=False)
     print(f"  post-filter: {len(df):,} rows, {df['symbol'].nunique()} coins")
+    print(f"  FDV coverage: {df.groupby('symbol')['max_supply'].last().notna().sum()} of "
+          f"{df['symbol'].nunique()} coins are hard-capped (have max_supply)")
 
     print("\nBear window detection:")
     peak, trough, mcap_series = find_bear_window(df)
@@ -354,6 +403,9 @@ def main():
         "quiet_accumulators": table_quiet_accumulators(df, peak, trough),
         "persistent_decliners": table_persistent_decliners(df),
         "stable_holders": table_stable_holders(df),
+        "overhang_risk": table_overhang_risk(df),
+        "low_float_decliners": table_low_float_decliners(df),
+        "high_conviction_climbers": table_high_conviction_climbers(df),
     }
     for name, t in tables.items():
         path = OUT / f"table_{name}.csv"

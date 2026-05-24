@@ -4,6 +4,7 @@ const links = [
   { href: "/", label: "Summary" },
   { href: "/climbers", label: "Climbers" },
   { href: "/quiet", label: "Quiet Accumulators" },
+  { href: "/float", label: "Float / Unlock Risk" },
   { href: "/decliners", label: "Decliners" },
   { href: "/holders", label: "Stable Holders" },
   { href: "/heatmap", label: "Heatmap" },

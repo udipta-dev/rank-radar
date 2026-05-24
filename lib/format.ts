@@ -16,3 +16,13 @@ export function fmtDelta(n: number | null | undefined): string {
 export function fmtDate(s: string): string {
   return s.slice(0, 10);
 }
+
+export function fmtPct(n: number | null | undefined, digits = 1): string {
+  if (n == null || !isFinite(n)) return "—";
+  return `${(n * 100).toFixed(digits)}%`;
+}
+
+export function fmtMultiple(n: number | null | undefined, digits = 1): string {
+  if (n == null || !isFinite(n)) return "—";
+  return `${n.toFixed(digits)}x`;
+}

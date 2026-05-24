@@ -70,6 +70,9 @@ def main():
         "quietAccumulators": load_table("quiet_accumulators"),
         "persistentDecliners": load_table("persistent_decliners"),
         "stableHolders": load_table("stable_holders"),
+        "overhangRisk": load_table("overhang_risk"),
+        "lowFloatDecliners": load_table("low_float_decliners"),
+        "highConvictionClimbers": load_table("high_conviction_climbers"),
     }
 
     # include every coin so /coin/[symbol] works for anything we have data on
@@ -77,6 +80,7 @@ def main():
     traj = cleaned.sort_values("date")
     trajectories = {}
     name_map = {}
+    current_metrics = {}  # latest fdv/mc_fdv per coin
     for sym, g in traj.groupby("symbol"):
         pts = []
         for d, r, m, p in zip(g["date"], g["cmc_rank"], g["market_cap_usd"], g["price_usd"]):
@@ -92,6 +96,16 @@ def main():
             continue
         trajectories[sym] = pts
         name_map[sym] = g["name"].iloc[-1]
+        last = g.iloc[-1]
+        current_metrics[sym] = {
+            "mcap": float(last["market_cap_usd"]) if pd.notna(last["market_cap_usd"]) else None,
+            "fdv": float(last["fdv"]) if pd.notna(last["fdv"]) else None,
+            "mcFdv": float(last["mc_fdv"]) if pd.notna(last["mc_fdv"]) else None,
+            "price": float(last["price_usd"]) if pd.notna(last["price_usd"]) else None,
+            "circulatingSupply": float(last["circulating_supply"]) if pd.notna(last["circulating_supply"]) else None,
+            "maxSupply": float(last["max_supply"]) if pd.notna(last["max_supply"]) else None,
+            "isCapped": bool(pd.notna(last["max_supply"])),
+        }
 
     # heatmap matrix for top-50 current
     top_now = cleaned[cleaned["date"] == latest].nsmallest(50, "cmc_rank")["symbol"].tolist()
@@ -128,6 +142,7 @@ def main():
         "tables": tables,
         "trajectories": trajectories,
         "nameMap": name_map,
+        "currentMetrics": current_metrics,
         "heatmap": heatmap,
         "coverage": coverage_records,
         "summaryMd": summary_md,

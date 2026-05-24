@@ -76,13 +76,13 @@ export default function TrajectoryChart({
           <CartesianGrid stroke="#232a32" strokeDasharray="3 3" />
           <XAxis
             dataKey="date"
-            stroke="#8a93a0"
+            stroke="#ffffff"
             fontSize={11}
             tickFormatter={(d) => d.slice(2, 7)}
             minTickGap={30}
           />
           <YAxis
-            stroke="#8a93a0"
+            stroke="#ffffff"
             fontSize={11}
             reversed
             domain={[1, yMax]}
@@ -90,7 +90,7 @@ export default function TrajectoryChart({
               value: "CMC rank (up = better)",
               angle: -90,
               position: "insideLeft",
-              fill: "#8a93a0",
+              fill: "#ffffff",
               fontSize: 11,
             }}
           />

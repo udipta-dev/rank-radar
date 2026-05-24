@@ -30,7 +30,7 @@ export default function CoverageChart({
         <CartesianGrid stroke="#232a32" strokeDasharray="3 3" />
         <XAxis
           dataKey="date"
-          stroke="#8a93a0"
+          stroke="#ffffff"
           fontSize={11}
           tickFormatter={(d) => d.slice(2, 7)}
           minTickGap={30}

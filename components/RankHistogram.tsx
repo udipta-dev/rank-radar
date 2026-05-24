@@ -48,8 +48,8 @@ export default function RankHistogram({
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={bins} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="#232a32" strokeDasharray="3 3" />
-          <XAxis dataKey="center" stroke="#8a93a0" fontSize={11} />
-          <YAxis stroke="#8a93a0" fontSize={11} />
+          <XAxis dataKey="center" stroke="#ffffff" fontSize={11} />
+          <YAxis stroke="#ffffff" fontSize={11} />
           <Tooltip
             contentStyle={{
               background: "#14181d",
@@ -68,7 +68,7 @@ export default function RankHistogram({
           <ReferenceLine x={0} stroke="#f97373" strokeDasharray="4 4" />
           <Bar dataKey="count">
             {bins.map((b, i) => (
-              <Cell key={i} fill={b.center > 0 ? "#67e8a3" : b.center < 0 ? "#f97373" : "#8a93a0"} />
+              <Cell key={i} fill={b.center > 0 ? "#67e8a3" : b.center < 0 ? "#f97373" : "#ffffff"} />
             ))}
           </Bar>
         </BarChart>

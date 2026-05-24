@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const links = [
-  { href: "/", label: "Summary" },
+  { href: "/", label: "Market" },
   { href: "/climbers", label: "Climbers" },
   { href: "/quiet", label: "Quiet Accumulators" },
   { href: "/float", label: "Float / Unlock Risk" },
@@ -9,6 +9,7 @@ const links = [
   { href: "/holders", label: "Stable Holders" },
   { href: "/heatmap", label: "Heatmap" },
   { href: "/charts", label: "Charts" },
+  { href: "/notes", label: "Notes" },
 ];
 
 export default function Nav() {

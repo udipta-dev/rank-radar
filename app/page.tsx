@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CoinSearch from "@/components/CoinSearch";
+import MarketTable from "@/components/MarketTable";
 import { getData } from "@/lib/data";
 import { fmtMcap, fmtDelta, fmtDate } from "@/lib/format";
 
@@ -64,7 +65,7 @@ function TopList({
 }
 
 export default function Home() {
-  const { metadata: meta, tables, summaryMd, nameMap } = getData();
+  const { metadata: meta, tables, nameMap, currentMetrics, momentum } = getData();
   const bear = meta.bearWindow;
 
   return (
@@ -96,6 +97,16 @@ export default function Home() {
         />
       </section>
 
+      <section>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-lg font-bold">Market overview</h2>
+          <span className="text-xs text-[var(--fg-dim)]">
+            Top 100 by current rank, with momentum. Click any column to sort.
+          </span>
+        </div>
+        <MarketTable nameMap={nameMap} currentMetrics={currentMetrics} momentum={momentum} />
+      </section>
+
       <section className="grid md:grid-cols-2 gap-4">
         <TopList
           title="Top structural climbers (full window)"
@@ -110,15 +121,6 @@ export default function Home() {
           href="/climbers"
         />
       </section>
-
-      {summaryMd && (
-        <section className="border border-[var(--border)] bg-[var(--bg-elev)] rounded-lg p-6">
-          <h2 className="font-bold mb-3">Analyst notes</h2>
-          <pre className="text-xs whitespace-pre-wrap leading-relaxed text-[var(--fg-dim)] font-mono">
-            {summaryMd}
-          </pre>
-        </section>
-      )}
     </div>
   );
 }

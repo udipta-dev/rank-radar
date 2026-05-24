@@ -31,8 +31,16 @@ export default function TrajectoryChart({
   height?: number;
 }) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const allSymbols = series.map((s) => s.symbol);
+  const visibleCount = allSymbols.length - hidden.size;
 
-  const toggle = (sym: string) => {
+  const toggle = (sym: string, e?: React.MouseEvent) => {
+    // alt/option-click = solo (show only this one)
+    if (e?.altKey) {
+      const others = allSymbols.filter((s) => s !== sym);
+      setHidden(new Set(others));
+      return;
+    }
     setHidden((prev) => {
       const next = new Set(prev);
       if (next.has(sym)) next.delete(sym);
@@ -40,6 +48,9 @@ export default function TrajectoryChart({
       return next;
     });
   };
+
+  const hideAll = () => setHidden(new Set(allSymbols));
+  const showAll = () => setHidden(new Set());
 
   const { rows, yMax } = useMemo(() => {
     const dateSet = new Set<string>();
@@ -118,22 +129,46 @@ export default function TrajectoryChart({
           ))}
         </LineChart>
       </ResponsiveContainer>
-      {/* Custom legend: click to toggle lines */}
-      <div className="mt-3 flex flex-wrap gap-2">
+      {/* Bulk controls */}
+      <div className="mt-3 flex items-center gap-2 flex-wrap border-t border-[var(--border)] pt-3">
+        <span className="text-xs text-[var(--fg-dim)] mr-2">
+          {visibleCount} of {allSymbols.length} visible
+        </span>
+        <button
+          onClick={hideAll}
+          disabled={hidden.size === allSymbols.length}
+          className="px-2 py-0.5 text-xs rounded border border-[var(--border)] text-[var(--fg-dim)] hover:text-[var(--fg)] disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Hide all
+        </button>
+        <button
+          onClick={showAll}
+          disabled={hidden.size === 0}
+          className="px-2 py-0.5 text-xs rounded border border-[var(--border)] text-[var(--fg-dim)] hover:text-[var(--fg)] disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Show all
+        </button>
+        <span className="text-xs text-[var(--fg-dim)] ml-2">
+          tip: alt-click a coin to isolate it
+        </span>
+      </div>
+
+      {/* Coin pills: click to toggle, alt-click to solo */}
+      <div className="mt-2 flex flex-wrap gap-2">
         {series.map((s, i) => {
           const isHidden = hidden.has(s.symbol);
           return (
             <button
               key={s.symbol}
-              onClick={() => toggle(s.symbol)}
+              onClick={(e) => toggle(s.symbol, e)}
               className={`px-2 py-0.5 text-xs rounded border flex items-center gap-1.5 transition-opacity ${
-                isHidden ? "opacity-40" : ""
+                isHidden ? "opacity-40 hover:opacity-70" : ""
               }`}
               style={{
                 borderColor: COLORS[i % COLORS.length],
                 color: COLORS[i % COLORS.length],
               }}
-              title={isHidden ? "Click to show" : "Click to hide"}
+              title={isHidden ? "Click to show. Alt-click to isolate." : "Click to hide. Alt-click to isolate."}
             >
               <span
                 className="inline-block w-3 h-0.5"
@@ -143,14 +178,6 @@ export default function TrajectoryChart({
             </button>
           );
         })}
-        {hidden.size > 0 && (
-          <button
-            onClick={() => setHidden(new Set())}
-            className="px-2 py-0.5 text-xs rounded border border-[var(--border)] text-[var(--fg-dim)] hover:text-[var(--fg)]"
-          >
-            Show all
-          </button>
-        )}
       </div>
     </div>
   );

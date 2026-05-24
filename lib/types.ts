@@ -42,6 +42,13 @@ export type CurrentMetrics = {
   isCapped: boolean;
 };
 
+export type Momentum = {
+  currentRank: number;
+  d1: number | null;
+  d7: number | null;
+  d30: number | null;
+};
+
 export type BearWindow = {
   peak: string;
   trough: string;
@@ -72,6 +79,7 @@ export type WebData = {
   trajectories: Record<string, TrajectoryPoint[]>;
   nameMap: Record<string, string>;
   currentMetrics: Record<string, CurrentMetrics>;
+  momentum: Record<string, Momentum>;
   heatmap: {
     symbols: string[];
     dates: string[];

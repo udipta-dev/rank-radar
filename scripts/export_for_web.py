@@ -60,6 +60,42 @@ def detect_bear_window(df: pd.DataFrame) -> dict:
     }
 
 
+def compute_momentum(cleaned: pd.DataFrame) -> dict:
+    """For each coin in the latest snapshot, compute rank change vs ~1d, ~7d, ~30d ago.
+    Positive delta = rank improved (number went down).
+    Returns None for a window if we don't have a snapshot close enough to the target date."""
+    latest_date = cleaned["date"].max()
+    targets = [("d1", 1, 2), ("d7", 7, 4), ("d30", 30, 7)]  # (label, days, tolerance)
+    momentum = {}
+    for sym, g in cleaned.sort_values("date").groupby("symbol"):
+        latest_row = g[g["date"] == latest_date]
+        if latest_row.empty:
+            continue
+        cur = latest_row.iloc[0]
+        if pd.isna(cur["cmc_rank"]):
+            continue
+        current_rank = int(cur["cmc_rank"])
+        m: dict = {"currentRank": current_rank}
+        for label, days, tol in targets:
+            target = latest_date - pd.Timedelta(days=days)
+            distances = (g["date"] - target).abs()
+            if distances.empty:
+                m[label] = None
+                continue
+            closest_idx = distances.idxmin()
+            actual_gap_days = abs((g.loc[closest_idx, "date"] - target).days)
+            if actual_gap_days > tol:
+                m[label] = None
+                continue
+            prev_rank = g.loc[closest_idx, "cmc_rank"]
+            if pd.isna(prev_rank):
+                m[label] = None
+                continue
+            m[label] = int(prev_rank) - current_rank  # positive = climbed
+        momentum[sym] = m
+    return momentum
+
+
 def main():
     cleaned = pd.read_parquet(OUT / "cleaned.parquet")
     cleaned["date"] = pd.to_datetime(cleaned["date"])
@@ -129,6 +165,7 @@ def main():
     ]
 
     summary_md = (OUT / "summary.md").read_text() if (OUT / "summary.md").exists() else ""
+    momentum = compute_momentum(cleaned)
 
     doc = {
         "metadata": {
@@ -143,6 +180,7 @@ def main():
         "trajectories": trajectories,
         "nameMap": name_map,
         "currentMetrics": current_metrics,
+        "momentum": momentum,
         "heatmap": heatmap,
         "coverage": coverage_records,
         "summaryMd": summary_md,

@@ -8,6 +8,7 @@ const links = [
   { href: "/decliners", label: "Decliners" },
   { href: "/holders", label: "Stable Holders" },
   { href: "/heatmap", label: "Heatmap" },
+  { href: "/trending", label: "Trending" },
   { href: "/charts", label: "Charts" },
   { href: "/notes", label: "Notes" },
 ];

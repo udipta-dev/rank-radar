@@ -19,6 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pull in the trending-data branch so the aggregation step can read
+      # all the 15-min snapshots from the last 30 days.
+      - uses: actions/checkout@v4
+        with:
+          ref: trending-data
+          path: trending-data-checkout
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -36,7 +43,9 @@ jobs:
       - name: Run analysis (combines weekly + daily)
         run: python scripts/analyze.py
 
-      - name: Export web.json
+      - name: Export web.json (incl. trending aggregates from trending-data branch)
+        env:
+          TRENDING_DIR: ${{ github.workspace }}/trending-data-checkout/data/trending
         run: python scripts/export_for_web.py
 
       - name: Commit and push if changed

@@ -14,11 +14,17 @@ from pathlib import Path
 
 import pandas as pd
 
+import os
+from datetime import datetime, timezone, timedelta
+from collections import defaultdict
+
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data"
 OUT = DATA / "out"
 PUBLIC = ROOT / "public"
 TARGET = DATA / "web.json"
+# TRENDING_DIR override lets CI point at the trending-data branch checkout
+TRENDING_DIR = Path(os.environ.get("TRENDING_DIR", str(DATA / "trending")))
 
 # Include trajectories for ALL coins in the post-filter universe so the site
 # can render a /coin/[symbol] page for anything. ~366 coins × ~100 snapshots
@@ -57,6 +63,85 @@ def detect_bear_window(df: pd.DataFrame) -> dict:
         "drawdownPct": round(float(drawdown[trough_idx]) * 100, 2),
         "peakMcap": float(per_snap[peak_idx]),
         "troughMcap": float(per_snap[trough_idx]),
+    }
+
+
+def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
+    """Read all trending snapshots from trending_dir/*.json (one file per day,
+    each with a list of 15-min snapshots) and compute per-coin appearance metrics:
+    counts over 24h / 7d / 30d windows, first / last seen, best position score,
+    daily breakdown (30 buckets) for sparkline rendering."""
+    if now is None:
+        now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=30)
+    if not trending_dir.exists():
+        print(f"  no trending data dir at {trending_dir}, skipping")
+        return {"trendingNow": [], "perCoin": {}, "latestSnapshotTs": None, "snapshotCount30d": 0}
+
+    snaps: list[tuple[datetime, list[dict]]] = []
+    for f in sorted(trending_dir.glob("*.json")):
+        try:
+            doc = json.loads(f.read_text())
+        except Exception as e:
+            print(f"  skipping malformed {f.name}: {e}")
+            continue
+        for snap in doc.get("snapshots", []):
+            try:
+                ts = datetime.fromisoformat(snap["ts"].replace("Z", "+00:00"))
+            except Exception:
+                continue
+            if ts < cutoff:
+                continue
+            snaps.append((ts, snap.get("coins", [])))
+    snaps.sort(key=lambda x: x[0])
+    if not snaps:
+        return {"trendingNow": [], "perCoin": {}, "latestSnapshotTs": None, "snapshotCount30d": 0}
+
+    latest_ts, latest_coins = snaps[-1]
+    today = now.date()
+
+    per_coin: dict[str, dict] = defaultdict(lambda: {
+        "id": None, "symbol": None, "name": None,
+        "count24h": 0, "count7d": 0, "count30d": 0,
+        "lastSeen": None, "firstSeen": None,
+        "dailyCounts": [0] * 30,
+        "bestPosition": 999,
+    })
+
+    for ts, coins in snaps:
+        days_ago = (today - ts.date()).days
+        within_24h = (now - ts).total_seconds() <= 86400
+        within_7d = (now - ts).total_seconds() <= 7 * 86400
+        for coin in coins:
+            sym = coin.get("symbol")
+            if not sym:
+                continue
+            c = per_coin[sym]
+            c["id"] = coin.get("id")
+            c["symbol"] = sym
+            c["name"] = coin.get("name")
+            c["count30d"] += 1
+            if within_7d:
+                c["count7d"] += 1
+            if within_24h:
+                c["count24h"] += 1
+            ts_iso = ts.isoformat().replace("+00:00", "Z")
+            if c["lastSeen"] is None or ts_iso > c["lastSeen"]:
+                c["lastSeen"] = ts_iso
+            if c["firstSeen"] is None or ts_iso < c["firstSeen"]:
+                c["firstSeen"] = ts_iso
+            if 0 <= days_ago < 30:
+                c["dailyCounts"][29 - days_ago] += 1
+            score = coin.get("score")
+            if isinstance(score, (int, float)) and score < c["bestPosition"]:
+                c["bestPosition"] = int(score)
+
+    return {
+        "latestSnapshotTs": latest_ts.isoformat().replace("+00:00", "Z"),
+        "snapshotCount30d": len(snaps),
+        "trendingNow": [{"symbol": c.get("symbol"), "name": c.get("name"), "id": c.get("id"),
+                          "score": c.get("score")} for c in latest_coins],
+        "perCoin": dict(per_coin),
     }
 
 
@@ -166,6 +251,9 @@ def main():
 
     summary_md = (OUT / "summary.md").read_text() if (OUT / "summary.md").exists() else ""
     momentum = compute_momentum(cleaned)
+    trending = compute_trending(TRENDING_DIR)
+    print(f"  trending: {trending.get('snapshotCount30d', 0)} snapshots, "
+          f"{len(trending.get('perCoin', {}))} unique coins")
 
     doc = {
         "metadata": {
@@ -181,6 +269,7 @@ def main():
         "nameMap": name_map,
         "currentMetrics": current_metrics,
         "momentum": momentum,
+        "trending": trending,
         "heatmap": heatmap,
         "coverage": coverage_records,
         "summaryMd": summary_md,

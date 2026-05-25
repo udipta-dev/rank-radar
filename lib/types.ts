@@ -52,6 +52,26 @@ export type Momentum = {
   d30: number | null;
 };
 
+export type TrendingCoin = {
+  id: string | null;
+  symbol: string;
+  name: string | null;
+  count24h: number;
+  count7d: number;
+  count30d: number;
+  lastSeen: string | null;
+  firstSeen: string | null;
+  dailyCounts: number[]; // 30 buckets, oldest -> newest
+  bestPosition: number;  // lowest score seen (0 = top of trending list)
+};
+
+export type TrendingData = {
+  latestSnapshotTs: string | null;
+  snapshotCount30d: number;
+  trendingNow: { symbol: string; name: string | null; id: string | null; score: number | null }[];
+  perCoin: Record<string, TrendingCoin>;
+};
+
 export type BearWindow = {
   peak: string;
   trough: string;
@@ -83,6 +103,7 @@ export type WebData = {
   nameMap: Record<string, string>;
   currentMetrics: Record<string, CurrentMetrics>;
   momentum: Record<string, Momentum>;
+  trending: TrendingData;
   heatmap: {
     symbols: string[];
     dates: string[];

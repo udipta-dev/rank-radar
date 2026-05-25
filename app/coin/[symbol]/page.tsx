@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import TrajectoryChart from "@/components/TrajectoryChart";
+import Sparkline from "@/components/Sparkline";
 import { getData } from "@/lib/data";
 import { fmtDate, fmtMcap, fmtPct } from "@/lib/format";
 
@@ -12,7 +13,8 @@ export function generateStaticParams() {
 export default async function CoinPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
   const sym = decodeURIComponent(symbol);
-  const { trajectories, nameMap, metadata, tables, currentMetrics } = getData();
+  const { trajectories, nameMap, metadata, tables, currentMetrics, trending } = getData();
+  const trend = trending?.perCoin?.[sym];
   const traj = trajectories[sym];
   if (!traj) notFound();
 
@@ -133,6 +135,35 @@ export default async function CoinPage({ params }: { params: Promise<{ symbol: s
           }
         />
       </div>
+
+      {trend && trend.count30d > 0 && (
+        <div className="border border-[var(--border)] bg-[var(--bg-elev)] rounded-lg p-4">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="font-bold">CoinGecko trending appearances</h2>
+            <span className="text-xs text-[var(--fg-dim)]">
+              best position seen: {trend.bestPosition < 999 ? `#${trend.bestPosition + 1}` : "—"} · last seen: {trend.lastSeen ? trend.lastSeen.slice(0, 16).replace("T", " ") + " UTC" : "—"}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div>
+              <div className="text-xs text-[var(--fg-dim)]">Last 24h</div>
+              <div className="text-2xl font-mono">{trend.count24h}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[var(--fg-dim)]">Last 7d</div>
+              <div className="text-2xl font-mono">{trend.count7d}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[var(--fg-dim)]">Last 30d</div>
+              <div className="text-2xl font-mono">{trend.count30d}</div>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-[var(--fg-dim)] mb-1">30-day activity (one bar per day)</div>
+            <Sparkline values={trend.dailyCounts} width={520} height={40} />
+          </div>
+        </div>
+      )}
 
       <div className="border border-[var(--border)] bg-[var(--bg-elev)] rounded-lg p-4">
         <h2 className="font-bold mb-3">Rank trajectory</h2>

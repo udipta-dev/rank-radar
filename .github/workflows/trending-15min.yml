@@ -1,0 +1,60 @@
+name: Trending capture (every 15 min)
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trending
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      # main has the up-to-date script
+      - uses: actions/checkout@v4
+        with:
+          path: main-checkout
+
+      # trending-data holds the accumulating snapshots
+      - uses: actions/checkout@v4
+        with:
+          ref: trending-data
+          path: trending-checkout
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install requests
+
+      - name: Capture trending snapshot into trending-data branch
+        env:
+          TRENDING_OUT_DIR: ${{ github.workspace }}/trending-checkout/data/trending
+        run: python main-checkout/scripts/scrape_trending.py
+
+      - name: Commit + push to trending-data branch
+        working-directory: trending-checkout
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/trending/
+          if git diff --staged --quiet; then
+            echo "No new data."
+            exit 0
+          fi
+          git commit -m "trending: $(date -u +%Y-%m-%dT%H:%MZ)"
+          # retry on push conflict in case a parallel run squeezed in
+          for i in 1 2 3; do
+            if git push; then exit 0; fi
+            git pull --rebase --autostash
+            sleep 2
+          done
+          echo "push failed after 3 attempts"
+          exit 1

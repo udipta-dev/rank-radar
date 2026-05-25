@@ -1,8 +1,10 @@
-name: Trending capture (every 15 min)
+name: Trending capture (every 30 min)
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Explicit times (0 and 30 past every hour) — GH Actions treats explicit
+    # cron more reliably than */N on free shared runners.
+    - cron: "0,30 * * * *"
   workflow_dispatch: {}
 
 permissions:

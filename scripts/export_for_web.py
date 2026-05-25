@@ -121,10 +121,16 @@ def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
             c["symbol"] = sym
             c["name"] = coin.get("name")
             c["count30d"] += 1
+            score = coin.get("score") if isinstance(coin.get("score"), (int, float)) else None
+            # weighted score: top of list (score=0) worth 15, bottom (score=14) worth 1
+            weighted = (15 - int(score)) if score is not None else 1
+            c["weightedScore30d"] = c.get("weightedScore30d", 0) + weighted
             if within_7d:
                 c["count7d"] += 1
+                c["weightedScore7d"] = c.get("weightedScore7d", 0) + weighted
             if within_24h:
                 c["count24h"] += 1
+                c["weightedScore24h"] = c.get("weightedScore24h", 0) + weighted
             ts_iso = ts.isoformat().replace("+00:00", "Z")
             if c["lastSeen"] is None or ts_iso > c["lastSeen"]:
                 c["lastSeen"] = ts_iso
@@ -132,9 +138,69 @@ def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
                 c["firstSeen"] = ts_iso
             if 0 <= days_ago < 30:
                 c["dailyCounts"][29 - days_ago] += 1
-            score = coin.get("score")
-            if isinstance(score, (int, float)) and score < c["bestPosition"]:
+            if score is not None and score < c["bestPosition"]:
                 c["bestPosition"] = int(score)
+
+    # ensure weighted scores exist for all coins (some only outside 7d/24h windows)
+    for c in per_coin.values():
+        c.setdefault("weightedScore24h", 0)
+        c.setdefault("weightedScore7d", 0)
+        c.setdefault("weightedScore30d", 0)
+
+    # --- heatmap matrix: rows = coins ever trending, cols = each snapshot ts ---
+    all_symbols = sorted(per_coin.keys(), key=lambda s: -per_coin[s]["count30d"])
+    all_ts = [t.isoformat().replace("+00:00", "Z") for t, _ in snaps]
+    sym_idx = {s: i for i, s in enumerate(all_symbols)}
+    matrix: list[list[int | None]] = [[None] * len(snaps) for _ in all_symbols]
+    for ci, (_, coins) in enumerate(snaps):
+        for coin in coins:
+            sym = coin.get("symbol")
+            score = coin.get("score")
+            if sym in sym_idx and isinstance(score, (int, float)):
+                matrix[sym_idx[sym]][ci] = int(score)
+    heatmap = {"symbols": all_symbols, "timestamps": all_ts, "matrix": matrix}
+
+    # --- new entrants: trending NOW but not seen in any snapshot within the prior 48h ---
+    current_syms = {c.get("symbol") for c in latest_coins if c.get("symbol")}
+    cutoff_prior = latest_ts - timedelta(hours=48)
+    seen_recent: set[str] = set()
+    for ts, coins in snaps:
+        if cutoff_prior <= ts < latest_ts:
+            for coin in coins:
+                if coin.get("symbol"):
+                    seen_recent.add(coin["symbol"])
+    new_entrants = sorted(current_syms - seen_recent)
+
+    # --- fade alerts: had >=5 hits in last 7d (excl last 24h), <=1 hit in last 24h ---
+    cutoff_24h = now - timedelta(hours=24)
+    cutoff_7d = now - timedelta(days=7)
+    prior_counts: dict[str, int] = defaultdict(int)
+    recent_counts: dict[str, int] = defaultdict(int)
+    for ts, coins in snaps:
+        in_prior_7d = cutoff_7d <= ts < cutoff_24h
+        in_recent_24h = ts >= cutoff_24h
+        for coin in coins:
+            sym = coin.get("symbol")
+            if not sym:
+                continue
+            if in_prior_7d:
+                prior_counts[sym] += 1
+            if in_recent_24h:
+                recent_counts[sym] += 1
+    fade_alerts = sorted(
+        [
+            {
+                "symbol": s,
+                "name": per_coin[s].get("name"),
+                "priorHits": prior_counts[s],
+                "recentHits": recent_counts[s],
+                "drop": prior_counts[s] - recent_counts[s],
+            }
+            for s in prior_counts
+            if prior_counts[s] >= 5 and recent_counts[s] <= 1
+        ],
+        key=lambda r: -r["drop"],
+    )[:20]
 
     return {
         "latestSnapshotTs": latest_ts.isoformat().replace("+00:00", "Z"),
@@ -142,6 +208,9 @@ def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
         "trendingNow": [{"symbol": c.get("symbol"), "name": c.get("name"), "id": c.get("id"),
                           "score": c.get("score")} for c in latest_coins],
         "perCoin": dict(per_coin),
+        "heatmap": heatmap,
+        "newEntrants": new_entrants,
+        "fadeAlerts": fade_alerts,
     }
 
 

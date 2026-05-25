@@ -59,10 +59,21 @@ export type TrendingCoin = {
   count24h: number;
   count7d: number;
   count30d: number;
+  weightedScore24h: number;
+  weightedScore7d: number;
+  weightedScore30d: number;
   lastSeen: string | null;
   firstSeen: string | null;
   dailyCounts: number[]; // 30 buckets, oldest -> newest
   bestPosition: number;  // lowest score seen (0 = top of trending list)
+};
+
+export type FadeAlert = {
+  symbol: string;
+  name: string | null;
+  priorHits: number;
+  recentHits: number;
+  drop: number;
 };
 
 export type TrendingData = {
@@ -70,6 +81,13 @@ export type TrendingData = {
   snapshotCount30d: number;
   trendingNow: { symbol: string; name: string | null; id: string | null; score: number | null }[];
   perCoin: Record<string, TrendingCoin>;
+  heatmap: {
+    symbols: string[];
+    timestamps: string[];
+    matrix: (number | null)[][]; // [coin_idx][ts_idx] = position 0..14 or null
+  };
+  newEntrants: string[];
+  fadeAlerts: FadeAlert[];
 };
 
 export type BearWindow = {

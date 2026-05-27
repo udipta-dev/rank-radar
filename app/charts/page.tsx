@@ -7,6 +7,7 @@ import RankHistogram from "@/components/RankHistogram";
 import CoverageChart from "@/components/CoverageChart";
 import TrendingHeatmap from "@/components/TrendingHeatmap";
 import DivergenceChart from "@/components/DivergenceChart";
+import Heatmap from "@/components/Heatmap";
 import type { TrendingCoin, WebData } from "@/lib/types";
 import data from "@/data/web.json";
 
@@ -68,12 +69,23 @@ export default function ChartsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-bold mb-1">Charts</h1>
+        <h1 className="text-2xl font-bold mb-1">Visualize</h1>
         <p className="text-sm text-[var(--fg-dim)]">
-          Interactive views: structural rank trajectories, distribution shape, attention
-          dynamics from CoinGecko trending.
+          Interactive views: structural rank trajectories, the rank heatmap, distribution
+          shape, and attention dynamics from CoinGecko trending.
         </p>
       </header>
+
+      <Section
+        title="Rank heatmap (top 50 current)"
+        blurb="Rows = today's top 50 by rank. Columns = weekly snapshots. Brighter green = better rank. Hover any row to focus it."
+      >
+        <Heatmap
+          symbols={d.heatmap.symbols}
+          dates={d.heatmap.dates}
+          matrix={d.heatmap.matrix}
+        />
+      </Section>
 
       {/* ---- Rank section ---- */}
       <Section

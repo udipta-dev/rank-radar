@@ -102,13 +102,13 @@ export default function Home() {
           title="Top structural climbers (full window)"
           rows={tables.climbersOverall}
           scoreKey="rank_delta"
-          href="/climbers"
+          href="/movements"
         />
         <TopList
           title="Top bear-period climbers"
           rows={tables.climbersBear}
           scoreKey="rank_delta"
-          href="/climbers"
+          href="/movements"
         />
       </section>
 

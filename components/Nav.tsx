@@ -4,17 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 
 const links = [
-  { href: "/", label: "Market" },
-  { href: "/climbers", label: "Climbers" },
+  { href: "/movements", label: "Movements" },
   { href: "/quiet", label: "Quiet Accumulators" },
-  { href: "/float", label: "Float / Unlock Risk" },
-  { href: "/decliners", label: "Decliners" },
-  { href: "/holders", label: "Stable Holders" },
-  { href: "/heatmap", label: "Heatmap" },
+  { href: "/float", label: "Float / Unlock" },
   { href: "/trending", label: "Trending" },
   { href: "/narratives", label: "Narratives" },
   { href: "/nfts", label: "NFTs" },
-  { href: "/charts", label: "Charts" },
+  { href: "/charts", label: "Visualize" },
   { href: "/notes", label: "Notes" },
 ];
 
@@ -31,7 +27,6 @@ export default function Nav() {
           rank-radar
         </Link>
 
-        {/* desktop links */}
         <div className="hidden md:flex items-center gap-1 flex-wrap">
           {links.map((l) => (
             <Link key={l.href} href={l.href} className={linkClass}>
@@ -40,7 +35,6 @@ export default function Nav() {
           ))}
         </div>
 
-        {/* mobile hamburger */}
         <button
           type="button"
           aria-label={open ? "Close menu" : "Open menu"}
@@ -65,7 +59,6 @@ export default function Nav() {
         </button>
       </div>
 
-      {/* mobile dropdown */}
       {open && (
         <div className="md:hidden border-t border-[var(--border)]">
           {links.map((l) => (

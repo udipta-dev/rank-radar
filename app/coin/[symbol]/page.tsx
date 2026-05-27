@@ -33,21 +33,19 @@ export default async function CoinPage({ params }: { params: Promise<{ symbol: s
   // membership in each table
   const buckets: { name: string; href: string; tone?: "good" | "bad" }[] = [];
   if (tables.climbersOverall.find((r) => r.symbol === sym))
-    buckets.push({ name: "Overall climber", href: "/climbers", tone: "good" });
+    buckets.push({ name: "Overall climber", href: "/movements", tone: "good" });
   if (tables.climbersBear.find((r) => r.symbol === sym))
-    buckets.push({ name: "Bear climber", href: "/climbers", tone: "good" });
+    buckets.push({ name: "Bear climber", href: "/movements", tone: "good" });
   if (tables.quietAccumulators.find((r) => r.symbol === sym))
     buckets.push({ name: "Quiet accumulator", href: "/quiet", tone: "good" });
   if (tables.highConvictionClimbers.find((r) => r.symbol === sym))
     buckets.push({ name: "Survivor (climbing despite unlocks)", href: "/float", tone: "good" });
   if (tables.persistentDecliners.find((r) => r.symbol === sym))
-    buckets.push({ name: "Persistent decliner", href: "/decliners", tone: "bad" });
+    buckets.push({ name: "Persistent decliner", href: "/movements", tone: "bad" });
   if (tables.lowFloatDecliners.find((r) => r.symbol === sym))
     buckets.push({ name: "Death watch (declining + low float)", href: "/float", tone: "bad" });
   if (tables.overhangRisk.find((r) => r.symbol === sym))
     buckets.push({ name: "Overhang risk (low float)", href: "/float", tone: "bad" });
-  if (tables.stableHolders.find((r) => r.symbol === sym))
-    buckets.push({ name: "Stable holder", href: "/holders" });
 
   return (
     <div className="space-y-6">

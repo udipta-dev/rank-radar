@@ -48,6 +48,10 @@ jobs:
           TRENDING_DIR: ${{ github.workspace }}/trending-data-checkout/data/trending
         run: python scripts/export_for_web.py
 
+      - name: Generate OG social-card image
+        run: python scripts/generate_og.py
+        continue-on-error: true
+
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"

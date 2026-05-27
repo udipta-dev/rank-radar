@@ -19,10 +19,29 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+const SITE_URL = "https://rank-radar-alpha.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "rank-radar — crypto rank, float and attention tracker",
   description:
-    "Personal dashboard tracking CMC rank movements, FDV / float overhang, and CoinGecko trending persistence (coins, NFTs, narratives).",
+    "2 years of CMC rank history, FDV / float / unlock analysis, and CoinGecko trending persistence (coins, NFTs, narratives). Updated daily.",
+  openGraph: {
+    title: "rank-radar — crypto rank, float and attention tracker",
+    description:
+      "2 years of CMC rank history, FDV / float / unlock analysis, and CoinGecko trending persistence (coins, NFTs, narratives). Updated daily.",
+    url: SITE_URL,
+    siteName: "rank-radar",
+    type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "rank-radar heatmap" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "rank-radar",
+    description:
+      "2 years of CMC rank history + CoinGecko trending persistence. Updated daily.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

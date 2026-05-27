@@ -202,6 +202,10 @@ def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
         key=lambda r: -r["drop"],
     )[:20]
 
+    # NFTs + categories persistence (same shape as coins, different fields)
+    nft_data = _persistence_for("nfts", trending_dir, now)
+    cat_data = _persistence_for("categories", trending_dir, now)
+
     return {
         "latestSnapshotTs": latest_ts.isoformat().replace("+00:00", "Z"),
         "snapshotCount30d": len(snaps),
@@ -211,6 +215,90 @@ def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
         "heatmap": heatmap,
         "newEntrants": new_entrants,
         "fadeAlerts": fade_alerts,
+        "nfts": nft_data,
+        "categories": cat_data,
+    }
+
+
+def _persistence_for(section: str, trending_dir: Path, now: datetime) -> dict:
+    """Generic persistence aggregator for 'nfts' or 'categories'. Same metrics
+    as coins (24h/7d/30d counts, weighted by position, last seen, etc.)."""
+    if not trending_dir.exists():
+        return {"latestNow": [], "perItem": {}, "snapshotCount": 0}
+    cutoff = now - timedelta(days=30)
+    snaps: list[tuple[datetime, list[dict]]] = []
+    for f in sorted(trending_dir.glob("*.json")):
+        try:
+            doc = json.loads(f.read_text())
+        except Exception:
+            continue
+        for snap in doc.get("snapshots", []):
+            try:
+                ts = datetime.fromisoformat(snap["ts"].replace("Z", "+00:00"))
+            except Exception:
+                continue
+            if ts < cutoff:
+                continue
+            items = snap.get(section, [])
+            if items:
+                snaps.append((ts, items))
+    snaps.sort(key=lambda x: x[0])
+    if not snaps:
+        return {"latestNow": [], "perItem": {}, "snapshotCount": 0}
+
+    latest_ts, latest_items = snaps[-1]
+    today = now.date()
+    list_size = max((len(items) for _, items in snaps), default=1)
+
+    per_item: dict[str, dict] = defaultdict(lambda: {
+        "id": None, "name": None,
+        "count24h": 0, "count7d": 0, "count30d": 0,
+        "weightedScore24h": 0, "weightedScore7d": 0, "weightedScore30d": 0,
+        "lastSeen": None, "firstSeen": None,
+        "dailyCounts": [0] * 30,
+        "bestPosition": 999,
+    })
+
+    for ts, items in snaps:
+        days_ago = (today - ts.date()).days
+        within_24h = (now - ts).total_seconds() <= 86400
+        within_7d = (now - ts).total_seconds() <= 7 * 86400
+        for item in items:
+            key = item.get("id") or item.get("name")
+            if not key:
+                continue
+            it = per_item[key]
+            it["id"] = item.get("id")
+            it["name"] = item.get("name")
+            score = item.get("score")
+            weighted = (list_size - int(score)) if isinstance(score, (int, float)) else 1
+            it["count30d"] += 1
+            it["weightedScore30d"] += weighted
+            if within_7d:
+                it["count7d"] += 1
+                it["weightedScore7d"] += weighted
+            if within_24h:
+                it["count24h"] += 1
+                it["weightedScore24h"] += weighted
+            ts_iso = ts.isoformat().replace("+00:00", "Z")
+            if it["lastSeen"] is None or ts_iso > it["lastSeen"]:
+                it["lastSeen"] = ts_iso
+            if it["firstSeen"] is None or ts_iso < it["firstSeen"]:
+                it["firstSeen"] = ts_iso
+            if 0 <= days_ago < 30:
+                it["dailyCounts"][29 - days_ago] += 1
+            if isinstance(score, (int, float)) and score < it["bestPosition"]:
+                it["bestPosition"] = int(score)
+
+    return {
+        "latestSnapshotTs": latest_ts.isoformat().replace("+00:00", "Z"),
+        "snapshotCount": len(snaps),
+        "listSize": list_size,
+        "latestNow": [
+            {"id": x.get("id"), "name": x.get("name"), "score": x.get("score")}
+            for x in latest_items
+        ],
+        "perItem": dict(per_item),
     }
 
 

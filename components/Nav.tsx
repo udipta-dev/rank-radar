@@ -12,6 +12,8 @@ const links = [
   { href: "/holders", label: "Stable Holders" },
   { href: "/heatmap", label: "Heatmap" },
   { href: "/trending", label: "Trending" },
+  { href: "/narratives", label: "Narratives" },
+  { href: "/nfts", label: "NFTs" },
   { href: "/charts", label: "Charts" },
   { href: "/notes", label: "Notes" },
 ];

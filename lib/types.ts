@@ -76,6 +76,29 @@ export type FadeAlert = {
   drop: number;
 };
 
+export type TrendingItem = {
+  id: string | null;
+  name: string | null;
+  count24h: number;
+  count7d: number;
+  count30d: number;
+  weightedScore24h: number;
+  weightedScore7d: number;
+  weightedScore30d: number;
+  lastSeen: string | null;
+  firstSeen: string | null;
+  dailyCounts: number[];
+  bestPosition: number;
+};
+
+export type TrendingSubData = {
+  latestSnapshotTs: string | null;
+  snapshotCount: number;
+  listSize: number;
+  latestNow: { id: string | null; name: string | null; score: number | null }[];
+  perItem: Record<string, TrendingItem>;
+};
+
 export type TrendingData = {
   latestSnapshotTs: string | null;
   snapshotCount30d: number;
@@ -84,10 +107,12 @@ export type TrendingData = {
   heatmap: {
     symbols: string[];
     timestamps: string[];
-    matrix: (number | null)[][]; // [coin_idx][ts_idx] = position 0..14 or null
+    matrix: (number | null)[][];
   };
   newEntrants: string[];
   fadeAlerts: FadeAlert[];
+  nfts: TrendingSubData;
+  categories: TrendingSubData;
 };
 
 export type BearWindow = {

@@ -110,8 +110,11 @@ def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
 
     for ts, coins in snaps:
         days_ago = (today - ts.date()).days
-        within_24h = (now - ts).total_seconds() <= 86400
-        within_7d = (now - ts).total_seconds() <= 7 * 86400
+        secs_ago = (now - ts).total_seconds()
+        within_1h = secs_ago <= 3600
+        within_6h = secs_ago <= 6 * 3600
+        within_24h = secs_ago <= 86400
+        within_7d = secs_ago <= 7 * 86400
         for coin in coins:
             sym = coin.get("symbol")
             if not sym:
@@ -131,6 +134,10 @@ def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
             if within_24h:
                 c["count24h"] += 1
                 c["weightedScore24h"] = c.get("weightedScore24h", 0) + weighted
+            if within_6h:
+                c["count6h"] = c.get("count6h", 0) + 1
+            if within_1h:
+                c["count1h"] = c.get("count1h", 0) + 1
             ts_iso = ts.isoformat().replace("+00:00", "Z")
             if c["lastSeen"] is None or ts_iso > c["lastSeen"]:
                 c["lastSeen"] = ts_iso
@@ -141,8 +148,10 @@ def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
             if score is not None and score < c["bestPosition"]:
                 c["bestPosition"] = int(score)
 
-    # ensure weighted scores exist for all coins (some only outside 7d/24h windows)
+    # ensure all counter fields exist on every coin
     for c in per_coin.values():
+        c.setdefault("count1h", 0)
+        c.setdefault("count6h", 0)
         c.setdefault("weightedScore24h", 0)
         c.setdefault("weightedScore7d", 0)
         c.setdefault("weightedScore30d", 0)

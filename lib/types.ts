@@ -56,6 +56,8 @@ export type TrendingCoin = {
   id: string | null;
   symbol: string;
   name: string | null;
+  count1h: number;
+  count6h: number;
   count24h: number;
   count7d: number;
   count30d: number;

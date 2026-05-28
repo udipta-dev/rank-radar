@@ -8,7 +8,7 @@ import data from "@/data/web.json";
 
 const d = data as unknown as WebData;
 
-type SortKey = "count24h" | "count7d" | "count30d" | "lastSeen" | "bestPosition";
+type SortKey = "count1h" | "count6h" | "count24h" | "count7d" | "count30d" | "lastSeen" | "bestPosition";
 
 function relTime(iso: string | null): string {
   if (!iso) return "—";
@@ -67,9 +67,9 @@ export default function TrendingPage() {
       <header>
         <h1 className="text-2xl font-bold mb-1">Trending</h1>
         <p className="text-sm text-[var(--fg-dim)]">
-          CoinGecko trending list captured every 15 min. Persistence = how many snapshots
-          a coin has appeared on the list. Higher = more sustained attention. Spikes that
-          vanish = pure hype / paid push, fade fast.
+          CoinGecko trending list captured every 30 min, site refreshes every 30 min.
+          Persistence = how many snapshots a coin has appeared on the list. Higher =
+          more sustained attention. Spikes that vanish = pure hype / paid push, fade fast.
         </p>
         <p className="text-xs text-[var(--fg-dim)] mt-1">
           {trending.snapshotCount30d.toLocaleString()} snapshots collected over ~{days}d.
@@ -120,6 +120,20 @@ export default function TrendingPage() {
                 <th className="px-3 py-2 text-left text-[var(--fg-dim)]">Symbol</th>
                 <th className="px-3 py-2 text-left text-[var(--fg-dim)]">Name</th>
                 <th
+                  onClick={() => toggle("count1h")}
+                  className="px-3 py-2 text-right text-[var(--fg-dim)] cursor-pointer hover:text-[var(--fg)] whitespace-nowrap"
+                  title="Hits in the last hour (max 2 captures, fires every 30 min)"
+                >
+                  1h {sortKey === "count1h" && <span className="text-[var(--accent)]">{sortDir === "asc" ? "↑" : "↓"}</span>}
+                </th>
+                <th
+                  onClick={() => toggle("count6h")}
+                  className="px-3 py-2 text-right text-[var(--fg-dim)] cursor-pointer hover:text-[var(--fg)] whitespace-nowrap"
+                  title="Hits in the last 6 hours (max 12 captures)"
+                >
+                  6h {sortKey === "count6h" && <span className="text-[var(--accent)]">{sortDir === "asc" ? "↑" : "↓"}</span>}
+                </th>
+                <th
                   onClick={() => toggle("count24h")}
                   className="px-3 py-2 text-right text-[var(--fg-dim)] cursor-pointer hover:text-[var(--fg)] whitespace-nowrap"
                 >
@@ -164,6 +178,8 @@ export default function TrendingPage() {
                     </Link>
                   </td>
                   <td className="px-3 py-2 text-[var(--fg-dim)] truncate max-w-xs">{r.name ?? "—"}</td>
+                  <td className={`px-3 py-2 text-right font-mono ${r.count1h > 0 ? "text-[var(--accent)]" : ""}`}>{r.count1h || "—"}</td>
+                  <td className="px-3 py-2 text-right font-mono">{r.count6h || "—"}</td>
                   <td className="px-3 py-2 text-right font-mono">{r.count24h || "—"}</td>
                   <td className="px-3 py-2 text-right font-mono">{r.count7d || "—"}</td>
                   <td className="px-3 py-2 text-right font-mono">{r.count30d || "—"}</td>
@@ -174,8 +190,8 @@ export default function TrendingPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-[var(--fg-dim)]">
-                    No trending data yet. The 15-min capture cron has to run for a while.
+                  <td colSpan={10} className="px-3 py-8 text-center text-[var(--fg-dim)]">
+                    No trending data yet. The 30-min capture cron has to run for a while.
                     Persistence numbers will be meaningful after ~7 days of collection.
                   </td>
                 </tr>

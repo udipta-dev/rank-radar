@@ -1,9 +1,11 @@
-name: Trending capture (every 30 min)
+name: Trending capture + publish (every 30 min)
+
+# Single workflow that does both the CG capture (commits to trending-data branch)
+# AND the web.json refresh (commits to main → Vercel rebuild). One cron-job.org
+# task drives the whole 30-min loop, no GH scheduler dependency.
 
 on:
   schedule:
-    # Explicit times (0 and 30 past every hour) — GH Actions treats explicit
-    # cron more reliably than */N on free shared runners.
     - cron: "0,30 * * * *"
   workflow_dispatch: {}
 
@@ -15,15 +17,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  capture:
+  capture-and-publish:
     runs-on: ubuntu-latest
     steps:
-      # main has the up-to-date script
       - uses: actions/checkout@v4
         with:
           path: main-checkout
 
-      # trending-data holds the accumulating snapshots
       - uses: actions/checkout@v4
         with:
           ref: trending-data
@@ -34,25 +34,49 @@ jobs:
           python-version: "3.11"
 
       - name: Install deps
-        run: pip install requests
+        run: pip install requests pandas pyarrow
 
-      - name: Capture trending snapshot into trending-data branch
+      # ---- CAPTURE ----
+      - name: Scrape CG trending into trending-data branch
         env:
           TRENDING_OUT_DIR: ${{ github.workspace }}/trending-checkout/data/trending
         run: python main-checkout/scripts/scrape_trending.py
 
-      - name: Commit + push to trending-data branch
+      - name: Commit + push capture to trending-data
         working-directory: trending-checkout
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/trending/
           if git diff --staged --quiet; then
-            echo "No new data."
+            echo "No new capture data."
+          else
+            git commit -m "trending: $(date -u +%Y-%m-%dT%H:%MZ)"
+            for i in 1 2 3; do
+              if git push; then break; fi
+              git pull --rebase --autostash
+              sleep 2
+            done
+          fi
+
+      # ---- PUBLISH ----
+      - name: Recompute trending section of web.json on main
+        working-directory: main-checkout
+        env:
+          TRENDING_DIR: ${{ github.workspace }}/trending-checkout/data/trending
+        run: python scripts/refresh_trending.py
+
+      - name: Commit + push web.json to main
+        working-directory: main-checkout
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/web.json
+          if git diff --staged --quiet; then
+            echo "No web.json changes."
             exit 0
           fi
-          git commit -m "trending: $(date -u +%Y-%m-%dT%H:%MZ)"
-          # retry on push conflict in case a parallel run squeezed in
+          git commit -m "trending: publish $(date -u +%Y-%m-%dT%H:%MZ)"
           for i in 1 2 3; do
             if git push; then exit 0; fi
             git pull --rebase --autostash

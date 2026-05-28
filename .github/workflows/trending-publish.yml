@@ -1,0 +1,59 @@
+name: Publish trending (every 2 hours)
+
+# Reads accumulated captures from trending-data branch, recomputes only the
+# trending section of web.json on main, commits → triggers a Vercel rebuild.
+# 2h cadence keeps Vercel deploys at 12/day instead of 48, well inside hobby
+# tier limits, while keeping the site within ~2h of fresh.
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"  # every 2 hours on the hour
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: trending-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: trending-data
+          path: trending-data-checkout
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install pandas pyarrow
+
+      - name: Refresh trending section of web.json
+        env:
+          TRENDING_DIR: ${{ github.workspace }}/trending-data-checkout/data/trending
+        run: python scripts/refresh_trending.py
+
+      - name: Commit + push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/web.json
+          if git diff --staged --quiet; then
+            echo "No trending changes."
+            exit 0
+          fi
+          git commit -m "trending: publish $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do
+            if git push; then exit 0; fi
+            git pull --rebase --autostash
+            sleep 2
+          done
+          echo "push failed after 3 attempts"
+          exit 1

@@ -1,86 +1,68 @@
 """
-Scrape Reddit cashtag mentions across 4 crypto subreddits.
+Scrape Reddit cashtag mentions via Scrapling's StealthyFetcher (Camoufox).
 
-Uses Reddit's public JSON endpoints. Reddit started blocking anonymous
-data-center IPs (GitHub Actions, AWS, etc.) with 403 in late 2023.
-If 403s persist, the upgrade path is OAuth:
-  1. Register a "script" app at https://www.reddit.com/prefs/apps
-  2. Add REDDIT_CLIENT_ID + REDDIT_SECRET as repo secrets
-  3. This script will read them and use OAuth automatically
-For v1 we ship anonymous-first, fall back to writing an empty snapshot
-on 403, so the pipeline keeps running without error.
+Reddit's JSON / RSS / search endpoints are all 403'd for anonymous and
+data-center IPs in 2026. Even Scrapling's basic Fetcher (TLS spoofing)
+gets blocked. Only the full StealthyFetcher (Camoufox) gets through,
+and only on HTML pages, not JSON. So we fetch old.reddit.com HTML for
+each crypto sub, parse post titles via CSS, and extract $cashtag mentions.
 
-Output: data/reddit/YYYY-MM-DD.json  on the trending-data branch.
+Output: data/reddit/YYYY-MM-DD.json on the trending-data branch.
+
+Runtime cost per cron tick:
+  ~3-5s per sub × 4 subs = ~15-20s extra (one-time browser launch dominates)
+  Camoufox download ~500MB on first install; cached on the runner after.
 """
 from __future__ import annotations
 import json
 import os
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
-
-# allow this script to be invoked from anywhere (CI checks out main into
-# a subdir, so __file__ points at main-checkout/scripts/...)
 sys.path.insert(0, str(Path(__file__).parent))
 from symbol_detect import extract_cashtags, load_symbol_universe  # noqa: E402
 
-OUT_DIR = Path(os.environ.get("TRENDING_OUT_DIR_REDDIT") or os.environ.get(
+try:
+    from scrapling.fetchers import StealthyFetcher
+except ImportError:
+    StealthyFetcher = None
+
+OUT_DIR = Path(os.environ.get(
     "TRENDING_OUT_DIR", str(Path(__file__).parent.parent / "data" / "trending")
 )).parent / "reddit"
 SUBREDDITS = ["CryptoCurrency", "CryptoMarkets", "SatoshiStreetBets", "altcoin"]
-POSTS_PER_SUB = 50
-TIMEOUT = 20
+TIMEOUT_MS = 60000  # Playwright timeout is in ms
 RETRIES = 2
-UA = "web:rank-radar:v1.0 (by /u/udipta-dev)"
-CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID")
-SECRET = os.environ.get("REDDIT_SECRET")
 
 
-def get_oauth_token() -> str | None:
-    """If OAuth creds are configured, fetch an app-only access token."""
-    if not CLIENT_ID or not SECRET:
-        return None
-    try:
-        r = requests.post(
-            "https://www.reddit.com/api/v1/access_token",
-            auth=(CLIENT_ID, SECRET),
-            data={"grant_type": "client_credentials"},
-            headers={"User-Agent": UA},
-            timeout=TIMEOUT,
-        )
-        if r.status_code == 200:
-            return r.json().get("access_token")
-        print(f"  oauth token HTTP {r.status_code}: {r.text[:120]}")
-    except Exception as e:
-        print(f"  oauth token error {e}")
-    return None
-
-
-def fetch_sub(sub: str, token: str | None) -> list[dict]:
-    """Pull /new from a subreddit. Returns the children list."""
-    if token:
-        url = f"https://oauth.reddit.com/r/{sub}/new?limit={POSTS_PER_SUB}"
-        headers = {"User-Agent": UA, "Authorization": f"Bearer {token}"}
-    else:
-        url = f"https://www.reddit.com/r/{sub}/new.json?limit={POSTS_PER_SUB}"
-        headers = {"User-Agent": UA}
+def fetch_sub(sub: str) -> list[dict]:
+    """Pull post titles from old.reddit.com/r/SUB/new/ via Camoufox.
+    Returns a list of {title, link} dicts."""
+    if StealthyFetcher is None:
+        print(f"  {sub}: scrapling not installed, skipping")
+        return []
+    url = f"https://old.reddit.com/r/{sub}/new/"
     for attempt in range(1, RETRIES + 1):
         try:
-            r = requests.get(url, headers=headers, timeout=TIMEOUT)
-            if r.status_code == 200:
-                return r.json().get("data", {}).get("children", []) or []
-            print(f"  {sub}: HTTP {r.status_code}, attempt {attempt}")
-            if r.status_code in (429, 503) and attempt < RETRIES:
-                time.sleep(5 * attempt)
+            r = StealthyFetcher.fetch(url, timeout=TIMEOUT_MS, headless=True, humanize=False)
+            if r.status != 200:
+                print(f"  {sub}: HTTP {r.status}, attempt {attempt}")
                 continue
-            return []
+            # old.reddit.com post titles are <a class="title">. Body text isn't
+            # in the listing page (would require per-post fetch — too expensive
+            # for the v1 cashtag-only signal target).
+            titles = r.css("a.title::text").getall()
+            links = r.css("a.title::attr(href)").getall()
+            posts = [
+                {"title": t.strip(), "link": l}
+                for t, l in zip(titles, links)
+                if t and t.strip()
+            ]
+            print(f"  {sub}: {len(posts)} posts pulled")
+            return posts
         except Exception as e:
-            print(f"  {sub}: error {e}")
-            if attempt < RETRIES:
-                time.sleep(3 * attempt)
+            print(f"  {sub}: attempt {attempt} error: {type(e).__name__}: {str(e)[:160]}")
     return []
 
 
@@ -88,34 +70,26 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc)
 
+    if StealthyFetcher is None:
+        print("scrapling not installed, writing empty snapshot")
+
     universe = load_symbol_universe()
     print(f"loaded {len(universe)} known symbols from web.json universe")
-
-    token = get_oauth_token()
-    if token:
-        print("using OAuth (REDDIT_CLIENT_ID/SECRET set)")
-    else:
-        print("no Reddit OAuth creds, falling back to anonymous (likely 403 on CI IPs)")
 
     mentions: list[dict] = []
     posts_scanned = 0
     for sub in SUBREDDITS:
-        children = fetch_sub(sub, token)
-        posts_scanned += len(children)
-        for child in children:
-            post = child.get("data", {})
-            title = post.get("title", "") or ""
-            body = post.get("selftext", "") or ""
-            text = title + "\n" + body
-            symbols = extract_cashtags(text, universe=universe)
+        posts = fetch_sub(sub)
+        posts_scanned += len(posts)
+        for p in posts:
+            title = p["title"]
+            symbols = extract_cashtags(title, universe=universe)
             for sym in symbols:
-                snippet = title[:140] if title else body[:140]
                 mentions.append({
                     "symbol": sym,
                     "subreddit": sub,
-                    "post_id": post.get("id"),
-                    "permalink": post.get("permalink"),
-                    "snippet": snippet,
+                    "permalink": p.get("link"),
+                    "snippet": title[:160],
                 })
 
     today = now.date().isoformat()

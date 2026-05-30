@@ -35,7 +35,18 @@ jobs:
           python-version: "3.11"
 
       - name: Install deps
-        run: pip install requests
+        run: pip install requests scrapling camoufox browserforge curl_cffi playwright
+
+      - name: Install Camoufox browser binary (cached after first cron run)
+        uses: actions/cache@v4
+        id: camoufox-cache
+        with:
+          path: ~/.cache/camoufox
+          key: camoufox-${{ runner.os }}-v1
+
+      - name: Fetch Camoufox if not cached
+        if: steps.camoufox-cache.outputs.cache-hit != 'true'
+        run: python -m camoufox fetch
 
       - name: Scrape CG trending
         env:

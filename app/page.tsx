@@ -116,10 +116,10 @@ export default function Home() {
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-lg font-bold">Market overview</h2>
           <span className="text-xs text-[var(--fg-dim)]">
-            Top 100 by current rank, with momentum. Click any column to sort.
+            Top 200 by current rank, with momentum. Click any column to sort.
           </span>
         </div>
-        <MarketTable nameMap={nameMap} currentMetrics={currentMetrics} momentum={momentum} />
+        <MarketTable nameMap={nameMap} currentMetrics={currentMetrics} momentum={momentum} limit={200} />
       </section>
     </div>
   );

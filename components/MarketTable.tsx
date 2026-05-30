@@ -36,7 +36,7 @@ export default function MarketTable({
   nameMap,
   currentMetrics,
   momentum,
-  limit = 100,
+  limit = 200,
 }: {
   nameMap: Record<string, string>;
   currentMetrics: Record<string, CurrentMetrics>;
@@ -112,7 +112,7 @@ export default function MarketTable({
       <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
         <input
           type="text"
-          placeholder="Filter top 100 by symbol or name..."
+          placeholder="Filter top 200 by symbol or name..."
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="px-3 py-1.5 bg-[var(--bg-elev)] border border-[var(--border)] rounded text-sm w-full max-w-xs focus:outline-none focus:border-[var(--accent)]"

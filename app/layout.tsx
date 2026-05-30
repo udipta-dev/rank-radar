@@ -44,6 +44,39 @@ export const metadata: Metadata = {
   },
 };
 
+const datasetSchema = {
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  name: "rank-radar",
+  description:
+    "Two years of CoinMarketCap rank history across 367 coins, daily live snapshots, FDV and float overhang analysis, and CoinGecko trending persistence for coins, NFTs, and narrative categories. Updated daily.",
+  url: SITE_URL,
+  keywords: [
+    "crypto",
+    "cryptocurrency",
+    "market cap rank",
+    "FDV",
+    "float",
+    "unlock cliff",
+    "CoinGecko trending",
+    "narrative rotation",
+    "rank radar",
+  ],
+  creator: {
+    "@type": "Person",
+    name: "Udipta",
+  },
+  license: "https://opensource.org/license/mit",
+  isAccessibleForFree: true,
+  variableMeasured: [
+    "CMC market cap rank over time",
+    "Market capitalization",
+    "Fully diluted valuation",
+    "Float percentage",
+    "Trending list appearance count over 24h / 7d / 30d windows",
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
@@ -53,6 +86,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="mx-auto max-w-7xl px-4 py-8 text-xs text-[var(--fg-dim)] border-t border-[var(--border)] mt-12">
           Data from CoinMarketCap weekly historical snapshots and CoinGecko trending. Personal use only.
         </footer>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetSchema) }}
+        />
         {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
       </body>
     </html>

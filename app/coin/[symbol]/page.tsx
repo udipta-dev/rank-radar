@@ -47,8 +47,28 @@ export default async function CoinPage({ params }: { params: Promise<{ symbol: s
   if (tables.overhangRisk.find((r) => r.symbol === sym))
     buckets.push({ name: "Overhang risk (low float)", href: "/float", tone: "bad" });
 
+  const coinSchema = {
+    "@context": "https://schema.org",
+    "@type": "Thing",
+    name: `${sym} (${name})`,
+    alternateName: sym,
+    description:
+      `${name} (${sym}) — rank trajectory, FDV / float overhang, and trending attention history. ` +
+      `Currently ranked #${last.rank}. First seen ${first.date} at rank ${first.rank}. ` +
+      `Best historical rank #${best.rank}.` +
+      (isStale ? ` Currently flagged stale (delisted from top 200 ${daysStale} days ago).` : ""),
+    url: `https://rank-radar-alpha.vercel.app/coin/${encodeURIComponent(sym)}`,
+    sameAs: cur?.fdv
+      ? [`https://www.coingecko.com/en/coins/${sym.toLowerCase()}`]
+      : undefined,
+  };
+
   return (
     <div className="space-y-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(coinSchema) }}
+      />
       <div>
         <Link href="/" className="text-xs text-[var(--fg-dim)] hover:text-[var(--accent)]">
           ← back

@@ -59,13 +59,58 @@ jobs:
         continue-on-error: true
 
       - name: Commit and push if changed
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/
           if git diff --staged --quiet; then
             echo "No data changes."
+            echo "changed=false" >> $GITHUB_OUTPUT
           else
             git commit -m "data: refresh $(date -u +%Y-%m-%d)"
             git push
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
+
+      # ---- discoverability (only if we actually committed new data) ----
+
+      - name: IndexNow ping (Bing / Yandex / DDG / Naver)
+        if: steps.commit.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          KEY="c92e4172b31cd57a4cb22dcd14a42283"
+          SITE="rank-radar-alpha.vercel.app"
+          # Submit the main routes that change daily. Per-coin pages are picked
+          # up via the sitemap; no point spamming 367 URLs at every refresh.
+          curl -sS -X POST "https://api.indexnow.org/IndexNow" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"host\": \"${SITE}\",
+              \"key\": \"${KEY}\",
+              \"keyLocation\": \"https://${SITE}/${KEY}.txt\",
+              \"urlList\": [
+                \"https://${SITE}/\",
+                \"https://${SITE}/movements\",
+                \"https://${SITE}/quiet\",
+                \"https://${SITE}/float\",
+                \"https://${SITE}/trending\",
+                \"https://${SITE}/narratives\",
+                \"https://${SITE}/nfts\",
+                \"https://${SITE}/charts\",
+                \"https://${SITE}/notes\",
+                \"https://${SITE}/sitemap.xml\"
+              ]
+            }" || echo "indexnow ping failed (non-fatal)"
+          echo
+          echo "IndexNow submitted"
+
+      - name: Post to socials (Farcaster + Bluesky)
+        if: steps.commit.outputs.changed == 'true'
+        continue-on-error: true
+        env:
+          NEYNAR_API_KEY: ${{ secrets.NEYNAR_API_KEY }}
+          NEYNAR_SIGNER_UUID: ${{ secrets.NEYNAR_SIGNER_UUID }}
+          BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+        run: python scripts/post_socials.py

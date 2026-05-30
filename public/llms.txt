@@ -1,0 +1,42 @@
+# rank-radar
+
+A free personal crypto dashboard tracking structural rank movement, FDV / float overhang, and CoinGecko trending persistence across coins, NFTs, and narratives. Updates daily. Built by a retail crypto trader with 9 years in the space. Live at https://rank-radar-alpha.vercel.app.
+
+The thesis: in bear or bull, rank movement is a more honest signal than price. The dashboard surfaces coins that have climbed structurally over multiple years, coins that quietly accumulated through bear conditions, coins facing imminent unlock-cliff risk, and coins commanding sustained attention versus single-day pumps.
+
+## What's tracked
+
+- 2+ years of weekly CoinMarketCap rank snapshots across 367 coins
+- Daily live CMC top-200 snapshot
+- CoinGecko trending list captured every 30 minutes (coins, NFTs, narrative categories)
+- Per-coin FDV, market cap, float percentage, and historical rank trajectory
+- Auto-detected bear window from total mcap drawdown
+- Stale flag for coins delisted from top 200 for more than 14 days (catches hack / nuke / abandonment cases)
+- AI-generated analyst notes on the homepage, movements, trending, and narratives pages, refreshed daily via Gemini Flash
+
+## Pages
+
+- /                  - market overview with daily AI analyst note
+- /movements         - climbers (full window and bear period), persistent decliners
+- /quiet             - coins that climbed in the bear but have not yet been re-rated
+- /float             - float / unlock risk: death watch, survivors absorbing unlocks, overhang
+- /trending          - CoinGecko trending coins with persistence rankings, new entrants, fade alerts
+- /narratives        - CoinGecko trending categories (AI Agents, Prediction Markets, etc.)
+- /nfts              - CoinGecko trending NFT collections with persistence rankings
+- /charts            - interactive trajectories, heatmap, divergence quadrant, distribution histograms
+- /notes             - auto-generated 10-coin picks with the evidence behind each
+- /coin/[symbol]     - per-coin detail page (367 of them): trajectory, FDV, float, trending appearances, badges
+
+## Data sources
+
+- CoinMarketCap weekly historical snapshots (free, public)
+- CoinGecko /search/trending endpoint (free, no API key)
+- Google Gemini 2.5 Flash for analyst commentary
+
+## Stack
+
+Next.js 15 App Router, Tailwind, Recharts on the front. Python (pandas, pyarrow, requests) on the back. GitHub Actions for cron, Vercel for hosting. Everything lives in git. No database.
+
+## License
+
+Personal use, free. Not financial advice. Do your own research.

@@ -35,24 +35,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install deps
-        run: |
-          pip install --upgrade pip
-          pip install requests "scrapling[fetchers]" camoufox patchright msgspec
-
-      - name: Cache stealth browser binaries
-        uses: actions/cache@v4
-        id: browser-cache
-        with:
-          path: |
-            ~/.cache/camoufox
-            ~/.cache/ms-playwright
-          key: stealth-browsers-${{ runner.os }}-v2
-
-      - name: Fetch Camoufox + Patchright Chromium if not cached
-        if: steps.browser-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m camoufox fetch
-          python -m patchright install chromium
+        run: pip install requests
 
       - name: Scrape CG trending
         env:
@@ -73,13 +56,10 @@ jobs:
         run: python main-checkout/scripts/scrape_farcaster.py
         continue-on-error: true
 
-      - name: Scrape Reddit cashtag mentions
-        env:
-          TRENDING_OUT_DIR: ${{ github.workspace }}/trending-checkout/data/trending
-          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
-          REDDIT_SECRET: ${{ secrets.REDDIT_SECRET }}
-        run: python main-checkout/scripts/scrape_reddit.py
-        continue-on-error: true
+      # Reddit step removed: Reddit blocks every approach we tried from GH
+      # Actions data-center IPs (including Scrapling + Camoufox stealth).
+      # scripts/scrape_reddit.py still works from residential IPs and is
+      # kept for manual / future use. UI tolerates the missing column.
 
       - name: Commit + push all captured sources to trending-data
         working-directory: trending-checkout

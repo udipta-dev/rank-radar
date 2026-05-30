@@ -25,7 +25,8 @@ from symbol_detect import extract_cashtags, load_symbol_universe  # noqa: E402
 
 try:
     from scrapling.fetchers import StealthyFetcher
-except ImportError:
+except Exception as _imp_err:
+    print(f"scrapling import failed: {type(_imp_err).__name__}: {_imp_err}")
     StealthyFetcher = None
 
 OUT_DIR = Path(os.environ.get(

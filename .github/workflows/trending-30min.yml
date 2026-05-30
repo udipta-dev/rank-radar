@@ -37,17 +37,39 @@ jobs:
       - name: Install deps
         run: pip install requests
 
-      - name: Scrape CG trending into trending-data branch
+      - name: Scrape CG trending
         env:
           TRENDING_OUT_DIR: ${{ github.workspace }}/trending-checkout/data/trending
         run: python main-checkout/scripts/scrape_trending.py
+        continue-on-error: true
 
-      - name: Commit + push to trending-data
+      - name: Scrape CMC trending
+        env:
+          TRENDING_OUT_DIR: ${{ github.workspace }}/trending-checkout/data/trending
+        run: python main-checkout/scripts/scrape_cmc_trending.py
+        continue-on-error: true
+
+      - name: Scrape Farcaster cashtag mentions
+        env:
+          TRENDING_OUT_DIR: ${{ github.workspace }}/trending-checkout/data/trending
+          NEYNAR_API_KEY: ${{ secrets.NEYNAR_API_KEY }}
+        run: python main-checkout/scripts/scrape_farcaster.py
+        continue-on-error: true
+
+      - name: Scrape Reddit cashtag mentions
+        env:
+          TRENDING_OUT_DIR: ${{ github.workspace }}/trending-checkout/data/trending
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_SECRET: ${{ secrets.REDDIT_SECRET }}
+        run: python main-checkout/scripts/scrape_reddit.py
+        continue-on-error: true
+
+      - name: Commit + push all captured sources to trending-data
         working-directory: trending-checkout
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/trending/
+          git add data/
           if git diff --staged --quiet; then
             echo "No new data."
             exit 0

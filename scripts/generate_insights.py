@@ -213,9 +213,52 @@ def build_trending_msg(doc: dict) -> str:
             lines.append(f"  {f['symbol']}: prior {f['priorHits']} hits -> "
                          f"last 24h {f['recentHits']} hits")
         lines.append("")
+
+    # cross-source buzz: CG + CMC trending + Farcaster $cashtag + Reddit $cashtag
+    cross = doc.get("crossSource") or {}
+    cross_per = cross.get("perCoin") or {}
+    if cross_per:
+        ranked = sorted(
+            cross_per.values(),
+            key=lambda c: (-c.get("sourceCount24h", 0), -c.get("totalMentions24h", 0)),
+        )
+        top_multi = [c for c in ranked if c.get("sourceCount24h", 0) >= 2][:10]
+        lines.append("Cross-source consensus (last 24h, cashtag-only on socials):")
+        lines.append("  format: SYMBOL sources/4 (CG, CMC, FC, Reddit)")
+        for c in top_multi:
+            lines.append(
+                f"  {c['symbol']} {c.get('sourceCount24h',0)}/4 "
+                f"(CG {c['cg']['d1']}, CMC {c['cmc']['d1']}, "
+                f"FC {c['farcaster']['d1']}, R {c['reddit']['d1']})"
+            )
+        # CEX-only signal: CG/CMC nonzero but social zero
+        cex_only = [
+            c for c in ranked
+            if (c["cg"]["d1"] + c["cmc"]["d1"]) >= 3 and (c["farcaster"]["d1"] + c["reddit"]["d1"]) == 0
+        ][:6]
+        if cex_only:
+            lines.append("")
+            lines.append("Loud on CEX trending (CG/CMC) but SILENT on social (Farcaster/Reddit):")
+            for c in cex_only:
+                lines.append(f"  {c['symbol']}: CG {c['cg']['d1']}, CMC {c['cmc']['d1']}, socials 0")
+        # Social-only signal: socials nonzero, CG/CMC zero
+        social_only = [
+            c for c in ranked
+            if (c["farcaster"]["d1"] + c["reddit"]["d1"]) >= 3 and (c["cg"]["d1"] + c["cmc"]["d1"]) == 0
+        ][:6]
+        if social_only:
+            lines.append("")
+            lines.append("Loud on socials but NOT yet on CEX trending lists:")
+            for c in social_only:
+                lines.append(f"  {c['symbol']}: FC {c['farcaster']['d1']}, Reddit {c['reddit']['d1']}, CEX 0")
+        lines.append("")
+
     lines.append("Question: What's heating up vs what's rolling over? "
                  "Distinguish sustained attention from paid push or single-event pumps. "
-                 "Call out anything PENGU-like that has held attention for months.")
+                 "Use the cross-source data to call out convergence (multiple sources agree, "
+                 "strongest signal) AND divergence (loud on CEX trending but silent on socials = "
+                 "likely manipulation; loud on socials but absent from CEX trending = potential "
+                 "early signal). Call out anything PENGU-like that has held attention for months.")
     return "\n".join(lines)
 
 

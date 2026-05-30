@@ -101,6 +101,24 @@ export type TrendingSubData = {
   perItem: Record<string, TrendingItem>;
 };
 
+export type CrossSourceWindows = { h1: number; h6: number; d1: number; d7: number };
+
+export type CrossSourceCoin = {
+  symbol: string;
+  cg: CrossSourceWindows;
+  cmc: CrossSourceWindows;
+  farcaster: CrossSourceWindows;
+  reddit: CrossSourceWindows;
+  sourceCount24h: number;
+  totalMentions24h: number;
+};
+
+export type CrossSourceBuzz = {
+  perCoin: Record<string, CrossSourceCoin>;
+  snapshotCountsBySource: { cg: number; cmc: number; farcaster: number; reddit: number };
+  generatedAt: string;
+};
+
 export type TrendingData = {
   latestSnapshotTs: string | null;
   snapshotCount30d: number;
@@ -149,6 +167,7 @@ export type WebData = {
   currentMetrics: Record<string, CurrentMetrics>;
   momentum: Record<string, Momentum>;
   trending: TrendingData;
+  crossSource?: CrossSourceBuzz;
   heatmap: {
     symbols: string[];
     dates: string[];

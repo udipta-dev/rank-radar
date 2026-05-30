@@ -16,7 +16,7 @@ from pathlib import Path
 
 # reuse the heavy-lift function from the daily exporter
 sys.path.insert(0, str(Path(__file__).parent))
-from export_for_web import compute_trending  # noqa: E402
+from export_for_web import compute_trending, compute_cross_source_buzz  # noqa: E402
 
 ROOT = Path(__file__).parent.parent
 WEB_JSON = ROOT / "data" / "web.json"
@@ -32,6 +32,12 @@ def main():
     print(f"refreshing trending section from {TRENDING_DIR}")
     fresh = compute_trending(TRENDING_DIR)
     doc["trending"] = fresh
+
+    print("refreshing cross-source buzz")
+    cross = compute_cross_source_buzz(TRENDING_DIR.parent)
+    doc["crossSource"] = cross
+    print(f"  cross-source snapshots: {cross['snapshotCountsBySource']}, "
+          f"{len(cross['perCoin'])} coins mentioned")
 
     # bump the generated timestamp so the page footer reflects this refresh
     if isinstance(doc.get("metadata"), dict):

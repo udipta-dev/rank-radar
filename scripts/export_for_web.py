@@ -66,6 +66,103 @@ def detect_bear_window(df: pd.DataFrame) -> dict:
     }
 
 
+def compute_cross_source_buzz(trending_root: Path, now: datetime | None = None) -> dict:
+    """Read mention counts per coin per source over the last hour / 6h / 24h / 7d.
+
+    Sources:
+      cg        — data/trending/*.json  (existing CG trending captures)
+      cmc       — data/cmc_trending/*.json
+      farcaster — data/farcaster/*.json (cashtag mentions list per snapshot)
+      reddit    — data/reddit/*.json    (cashtag mentions list per snapshot)
+
+    Output keyed by symbol, with counts plus convenience aggregates:
+      sourceCount24h:    how many of 4 sources mentioned this in last 24h
+      totalMentions24h:  sum of cg+cmc+farcaster+reddit hits in last 24h
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    cutoffs = [
+        ("h1", now - timedelta(hours=1)),
+        ("h6", now - timedelta(hours=6)),
+        ("d1", now - timedelta(hours=24)),
+        ("d7", now - timedelta(days=7)),
+    ]
+
+    # mention extractor per source. each returns list of (ts, [symbols])
+    def load_source(d: Path, key: str) -> list[tuple[datetime, list[str]]]:
+        if not d.exists():
+            return []
+        out = []
+        cutoff = now - timedelta(days=7)
+        for f in sorted(d.glob("*.json")):
+            try:
+                doc = json.loads(f.read_text())
+            except Exception:
+                continue
+            for snap in doc.get("snapshots", []):
+                try:
+                    ts = datetime.fromisoformat(snap["ts"].replace("Z", "+00:00"))
+                except Exception:
+                    continue
+                if ts < cutoff:
+                    continue
+                syms: list[str] = []
+                if key == "cg":
+                    syms = [c.get("symbol") for c in snap.get("coins") or [] if c.get("symbol")]
+                elif key == "cmc":
+                    syms = [t.get("symbol") for t in snap.get("tokens") or [] if t.get("symbol")]
+                elif key in ("farcaster", "reddit"):
+                    # each mention contributes one count; same coin mentioned twice = 2
+                    syms = [m.get("symbol") for m in snap.get("mentions") or [] if m.get("symbol")]
+                out.append((ts, [s.upper() for s in syms]))
+        return out
+
+    sources = {
+        "cg":        load_source(trending_root / "trending",     "cg"),
+        "cmc":       load_source(trending_root / "cmc_trending", "cmc"),
+        "farcaster": load_source(trending_root / "farcaster",    "farcaster"),
+        "reddit":    load_source(trending_root / "reddit",       "reddit"),
+    }
+    snapshot_counts = {k: len(v) for k, v in sources.items()}
+
+    # per coin: counts[source][window] = int
+    per_coin: dict[str, dict] = {}
+
+    def bucket(sym: str) -> dict:
+        if sym not in per_coin:
+            per_coin[sym] = {
+                "symbol": sym,
+                "cg":        {w: 0 for w, _ in cutoffs},
+                "cmc":       {w: 0 for w, _ in cutoffs},
+                "farcaster": {w: 0 for w, _ in cutoffs},
+                "reddit":    {w: 0 for w, _ in cutoffs},
+            }
+        return per_coin[sym]
+
+    for src, items in sources.items():
+        for ts, syms in items:
+            in_window = {w: ts >= cut for w, cut in cutoffs}
+            for sym in syms:
+                if not sym:
+                    continue
+                b = bucket(sym)[src]
+                for w, ok in in_window.items():
+                    if ok:
+                        b[w] += 1
+
+    # convenience aggregates
+    for sym, c in per_coin.items():
+        d1_per_src = {s: c[s]["d1"] for s in ("cg", "cmc", "farcaster", "reddit")}
+        c["sourceCount24h"] = sum(1 for v in d1_per_src.values() if v > 0)
+        c["totalMentions24h"] = sum(d1_per_src.values())
+
+    return {
+        "perCoin": per_coin,
+        "snapshotCountsBySource": snapshot_counts,
+        "generatedAt": now.isoformat().replace("+00:00", "Z"),
+    }
+
+
 def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
     """Read all trending snapshots from trending_dir/*.json (one file per day,
     each with a list of 15-min snapshots) and compute per-coin appearance metrics:
@@ -420,6 +517,9 @@ def main():
     trending = compute_trending(TRENDING_DIR)
     print(f"  trending: {trending.get('snapshotCount30d', 0)} snapshots, "
           f"{len(trending.get('perCoin', {}))} unique coins")
+    cross_source = compute_cross_source_buzz(TRENDING_DIR.parent)
+    print(f"  cross-source: snapshots {cross_source['snapshotCountsBySource']}, "
+          f"{len(cross_source['perCoin'])} coins with at least one mention")
 
     doc = {
         "metadata": {
@@ -436,6 +536,7 @@ def main():
         "currentMetrics": current_metrics,
         "momentum": momentum,
         "trending": trending,
+        "crossSource": cross_source,
         "heatmap": heatmap,
         "coverage": coverage_records,
         "summaryMd": summary_md,

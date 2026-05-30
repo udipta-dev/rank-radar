@@ -13,8 +13,9 @@ export function generateStaticParams() {
 export default async function CoinPage({ params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
   const sym = decodeURIComponent(symbol);
-  const { trajectories, nameMap, metadata, tables, currentMetrics, trending } = getData();
+  const { trajectories, nameMap, metadata, tables, currentMetrics, trending, crossSource } = getData();
   const trend = trending?.perCoin?.[sym];
+  const cross = crossSource?.perCoin?.[sym];
   const traj = trajectories[sym];
   if (!traj) notFound();
 
@@ -179,6 +180,35 @@ export default async function CoinPage({ params }: { params: Promise<{ symbol: s
           <div>
             <div className="text-xs text-[var(--fg-dim)] mb-1">30-day activity (one bar per day)</div>
             <Sparkline values={trend.dailyCounts} width={520} height={40} />
+          </div>
+        </div>
+      )}
+
+      {cross && cross.totalMentions24h > 0 && (
+        <div className="border border-[var(--border)] bg-[var(--bg-elev)] rounded-lg p-4">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="font-bold">Mentions across sources (24h)</h2>
+            <span className="text-xs text-[var(--fg-dim)]">
+              {cross.sourceCount24h}/4 sources
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <div className="text-xs text-[var(--fg-dim)]">CoinGecko trending</div>
+              <div className="text-2xl font-mono">{cross.cg.d1 || "—"}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[var(--fg-dim)]">CMC trending</div>
+              <div className="text-2xl font-mono">{cross.cmc.d1 || "—"}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[var(--fg-dim)]">Farcaster $cashtag</div>
+              <div className="text-2xl font-mono">{cross.farcaster.d1 || "—"}</div>
+            </div>
+            <div>
+              <div className="text-xs text-[var(--fg-dim)]">Reddit $cashtag</div>
+              <div className="text-2xl font-mono">{cross.reddit.d1 || "—"}</div>
+            </div>
           </div>
         </div>
       )}

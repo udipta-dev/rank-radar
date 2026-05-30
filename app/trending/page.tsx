@@ -28,6 +28,7 @@ export default function TrendingPage() {
   const [sortKey, setSortKey] = useState<SortKey>("count7d");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [filter, setFilter] = useState("");
+  const [expanded, setExpanded] = useState(false);
 
   const rows = useMemo(() => {
     const all: TrendingCoin[] = Object.values(trending.perCoin || {});
@@ -170,7 +171,7 @@ export default function TrendingPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {(filter || expanded ? rows : rows.slice(0, 20)).map((r) => (
                 <tr key={r.symbol} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg-elev)]">
                   <td className="px-3 py-2">
                     <Link
@@ -202,7 +203,138 @@ export default function TrendingPage() {
             </tbody>
           </table>
         </div>
+        {!filter && rows.length > 20 && (
+          <div className="mt-3 text-center">
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="text-sm px-4 py-1.5 rounded border border-[var(--border)] text-[var(--fg-dim)] hover:text-[var(--fg)] hover:border-[var(--accent)]"
+            >
+              {expanded ? `Collapse to top 20` : `Show all (${rows.length - 20} more)`}
+            </button>
+          </div>
+        )}
       </section>
+
+      <CrossSourceSection />
     </div>
+  );
+}
+
+function CrossSourceSection() {
+  const cs = d.crossSource;
+  const [highConvOnly, setHighConvOnly] = useState(false);
+
+  type Row = {
+    symbol: string;
+    name: string | null;
+    cg: number;
+    cmc: number;
+    farcaster: number;
+    reddit: number;
+    sources: number;
+    total: number;
+  };
+
+  const rows: Row[] = useMemo(() => {
+    if (!cs?.perCoin) return [];
+    return Object.values(cs.perCoin)
+      .filter((c) => c.sourceCount24h >= 2)
+      .map((c) => ({
+        symbol: c.symbol,
+        name: d.nameMap?.[c.symbol] ?? null,
+        cg: c.cg.d1,
+        cmc: c.cmc.d1,
+        farcaster: c.farcaster.d1,
+        reddit: c.reddit.d1,
+        sources: c.sourceCount24h,
+        total: c.totalMentions24h,
+      }))
+      .sort((a, b) => b.sources - a.sources || b.total - a.total);
+  }, [cs]);
+
+  const visible = highConvOnly ? rows.filter((r) => r.sources >= 3) : rows;
+  const counts = cs?.snapshotCountsBySource;
+
+  if (!cs || rows.length === 0) {
+    return (
+      <section className="pt-2 border-t border-[var(--border)]">
+        <h2 className="font-bold mb-1">Cross-source consensus</h2>
+        <div className="text-sm text-[var(--fg-dim)]">
+          No multi-source overlap yet. Comes alive after the new scrapers
+          (CMC trending, Farcaster, Reddit) accumulate a few hours of data.
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="pt-2 border-t border-[var(--border)]">
+      <div className="flex items-baseline justify-between flex-wrap gap-2 mb-2">
+        <h2 className="font-bold">Cross-source consensus (last 24h)</h2>
+        <button
+          onClick={() => setHighConvOnly((v) => !v)}
+          className={`text-xs px-3 py-1 rounded border ${
+            highConvOnly
+              ? "border-[var(--accent)] text-[var(--accent)]"
+              : "border-[var(--border)] text-[var(--fg-dim)]"
+          }`}
+        >
+          {highConvOnly ? "All (2+ sources)" : "Only 3+ sources"}
+        </button>
+      </div>
+      <p className="text-xs text-[var(--fg-dim)] mb-3 max-w-3xl">
+        Coins appearing across multiple independent sources in the last 24h.
+        Higher source count = signal less likely to be one platform&apos;s paid push or noise.
+        Sources tracked: CoinGecko, CoinMarketCap trending, Farcaster cashtags, Reddit cashtags.
+        Cashtag-only detection on socials so volume is intentionally conservative.
+      </p>
+      <p className="text-xs text-[var(--fg-dim)] mb-3">
+        Snapshots over last 7d: CG {counts?.cg ?? 0} ·
+        CMC {counts?.cmc ?? 0} ·
+        Farcaster {counts?.farcaster ?? 0} ·
+        Reddit {counts?.reddit ?? 0}
+      </p>
+      <div className="overflow-x-auto border border-[var(--border)] rounded-lg">
+        <table className="w-full text-sm">
+          <thead className="bg-[var(--bg-elev)] border-b border-[var(--border)]">
+            <tr>
+              <th className="px-3 py-2 text-left text-[var(--fg-dim)]">Symbol</th>
+              <th className="px-3 py-2 text-left text-[var(--fg-dim)]">Name</th>
+              <th className="px-3 py-2 text-right text-[var(--fg-dim)]">Sources</th>
+              <th className="px-3 py-2 text-right text-[var(--fg-dim)]">Total</th>
+              <th className="px-3 py-2 text-right text-[var(--fg-dim)]">CG</th>
+              <th className="px-3 py-2 text-right text-[var(--fg-dim)]">CMC</th>
+              <th className="px-3 py-2 text-right text-[var(--fg-dim)]">FC</th>
+              <th className="px-3 py-2 text-right text-[var(--fg-dim)]">Reddit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((r) => (
+              <tr key={r.symbol} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg-elev)]">
+                <td className="px-3 py-2">
+                  <Link href={`/coin/${encodeURIComponent(r.symbol)}`} className="font-mono font-semibold hover:text-[var(--accent)]">
+                    {r.symbol}
+                  </Link>
+                </td>
+                <td className="px-3 py-2 text-[var(--fg-dim)] truncate max-w-xs">{r.name ?? "—"}</td>
+                <td className={`px-3 py-2 text-right font-mono ${r.sources >= 3 ? "text-[var(--accent)]" : ""}`}>{r.sources}/4</td>
+                <td className="px-3 py-2 text-right font-mono">{r.total}</td>
+                <td className="px-3 py-2 text-right font-mono">{r.cg || "—"}</td>
+                <td className="px-3 py-2 text-right font-mono">{r.cmc || "—"}</td>
+                <td className="px-3 py-2 text-right font-mono">{r.farcaster || "—"}</td>
+                <td className="px-3 py-2 text-right font-mono">{r.reddit || "—"}</td>
+              </tr>
+            ))}
+            {visible.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-3 py-6 text-center text-[var(--fg-dim)]">
+                  Nothing in 3+ sources right now. Toggle off the filter to see everything in 2+.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

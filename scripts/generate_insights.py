@@ -53,8 +53,12 @@ def call_gemini(user_msg: str, label: str) -> str:
         "contents": [{"role": "user", "parts": [{"text": user_msg}]}],
         "generationConfig": {
             "temperature": 0.75,
-            "maxOutputTokens": 350,
+            "maxOutputTokens": 1024,
             "candidateCount": 1,
+            # Disable internal "thinking" tokens — Gemini 2.5 spends part of the
+            # output budget on reasoning by default which truncates the actual
+            # response. For 80-120 word punchy notes we don't need reasoning.
+            "thinkingConfig": {"thinkingBudget": 0},
         },
     }
     url = f"{ENDPOINT}?key={API_KEY}"

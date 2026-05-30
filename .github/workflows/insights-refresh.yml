@@ -1,0 +1,63 @@
+name: Refresh AI insights (on-demand)
+
+# Lightweight workflow: regenerates the 4 insights using the latest data
+# without the heavy daily refresh (no CMC scrape, no analysis). Pulls
+# trending-data so trending insights see freshest captures, runs Gemini,
+# commits web.json. Trigger anytime from GH UI or `gh workflow run`.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: insights-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          ref: trending-data
+          path: trending-data-checkout
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install requests pandas pyarrow
+
+      - name: Refresh trending section first (so insights see fresh captures)
+        env:
+          TRENDING_DIR: ${{ github.workspace }}/trending-data-checkout/data/trending
+        run: python scripts/refresh_trending.py
+        continue-on-error: true
+
+      - name: Generate AI insights (Gemini Flash)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/generate_insights.py
+
+      - name: Commit + push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/web.json
+          if git diff --staged --quiet; then
+            echo "No changes to insights."
+            exit 0
+          fi
+          git commit -m "insights: refresh $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3; do
+            if git push; then exit 0; fi
+            git pull --rebase --autostash
+            sleep 2
+          done
+          echo "push failed after 3 attempts"
+          exit 1

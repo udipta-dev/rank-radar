@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import RankTable from "@/components/RankTable";
+import InsightCard from "@/components/InsightCard";
 import type { WebData } from "@/lib/types";
 import data from "@/data/web.json";
 
@@ -45,6 +46,8 @@ export default function MovementsPage() {
           Coins that have moved the most in rank. Negative Δ = rank got worse, positive = climbed.
         </p>
       </div>
+
+      <InsightCard text={d.insights?.movements} generatedAt={d.metadata.generatedAt} />
 
       <div className="flex gap-2 border-b border-[var(--border)] pb-3 flex-wrap">
         {tabs.map((t) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import PersistenceTable from "@/components/PersistenceTable";
+import InsightCard from "@/components/InsightCard";
 import type { WebData } from "@/lib/types";
 import data from "@/data/web.json";
 
@@ -22,6 +23,8 @@ export default function NarrativesPage() {
           {sub?.snapshotCount ?? 0} snapshots collected. List size: {sub?.listSize ?? 6} categories per snapshot.
         </p>
       </header>
+
+      <InsightCard text={d.insights?.narratives} generatedAt={d.metadata.generatedAt} />
 
       {sub?.latestNow && sub.latestNow.length > 0 && (
         <section className="border border-[var(--border)] bg-[var(--bg-elev)] rounded-lg p-4">

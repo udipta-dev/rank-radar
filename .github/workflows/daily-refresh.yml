@@ -48,6 +48,12 @@ jobs:
           TRENDING_DIR: ${{ github.workspace }}/trending-data-checkout/data/trending
         run: python scripts/export_for_web.py
 
+      - name: Generate AI insights (Gemini Flash)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python scripts/generate_insights.py
+        continue-on-error: true
+
       - name: Generate OG social-card image
         run: python scripts/generate_og.py
         continue-on-error: true

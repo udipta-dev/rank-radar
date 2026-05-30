@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import Sparkline from "@/components/Sparkline";
+import InsightCard from "@/components/InsightCard";
 import type { TrendingCoin, WebData } from "@/lib/types";
 import data from "@/data/web.json";
 
@@ -76,6 +77,8 @@ export default function TrendingPage() {
           Latest: {trending.latestSnapshotTs ? relTime(trending.latestSnapshotTs) : "never"}.
         </p>
       </header>
+
+      <InsightCard text={d.insights?.trending} generatedAt={d.metadata.generatedAt} />
 
       {/* Right now */}
       {trending.trendingNow.length > 0 && (

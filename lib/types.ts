@@ -156,4 +156,10 @@ export type WebData = {
   };
   coverage: { date: string; coins: number; totalMcap: number }[];
   summaryMd: string;
+  insights?: {
+    home?: string;
+    movements?: string;
+    trending?: string;
+    narratives?: string;
+  };
 };

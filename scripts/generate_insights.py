@@ -22,7 +22,7 @@ WEB_JSON = ROOT / "data" / "web.json"
 API_KEY = os.environ.get("GEMINI_API_KEY")
 ENDPOINT = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-2.0-flash:generateContent"
+    "gemini-2.5-flash:generateContent"
 )
 TIMEOUT = 45
 RETRIES = 2

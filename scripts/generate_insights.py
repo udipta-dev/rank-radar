@@ -136,6 +136,37 @@ def build_home_msg(doc: dict) -> str:
     for sym, m in climbers_30d:
         lines.append(f"  {_coin_label(sym, nm)}: rank {m['currentRank']}, +{m['d30']}")
     lines.append("")
+
+    # Sustained CG-trending coins also climbing on BOTH 7d and 30d.
+    # This is the strongest "real story" signal: persistent attention plus
+    # structural rank lift in both timeframes = not a one-day pump, not a
+    # hype spike that fades. count30d >= 30 means ~1 trending appearance
+    # per day on average over the last month.
+    trending_per = (doc.get("trending") or {}).get("perCoin") or {}
+    sustained_risers = []
+    for sym, m in momentum.items():
+        d7 = m.get("d7")
+        d30 = m.get("d30")
+        if d7 is None or d30 is None or d7 <= 0 or d30 <= 0:
+            continue
+        tp = trending_per.get(sym)
+        if not tp:
+            continue
+        c30 = tp.get("count30d", 0)
+        if c30 < 30:
+            continue
+        sustained_risers.append((sym, m, c30, tp.get("count24h", 0)))
+    sustained_risers.sort(key=lambda t: (-t[2], -(t[1]["d7"] + t[1]["d30"])))
+    sustained_risers = sustained_risers[:6]
+    if sustained_risers:
+        lines.append("Sustained CG-trending AND climbing on both 7d and 30d "
+                     "(persistence + rank lift, not a single-day pump):")
+        for sym, m, c30, c24 in sustained_risers:
+            lines.append(f"  {_coin_label(sym, nm)}: rank {m['currentRank']}, "
+                         f"+{m['d7']} (7d), +{m['d30']} (30d), "
+                         f"on CG trending {c30}× in 30d, still {c24}× in last 24h")
+        lines.append("")
+
     lines.append("Biggest float overhang (lowest MC/FDV, hard-capped only):")
     for r in overhang:
         mc_fdv = r.get("current_mc_fdv")
@@ -143,7 +174,11 @@ def build_home_msg(doc: dict) -> str:
             lines.append(f"  {r['symbol']}: float {mc_fdv*100:.1f}%, rank {r.get('end_rank','?')}")
     lines.append("")
     lines.append("Question: What mattered in the last 24h to 7d across rank movement and float? "
-                 "Pick the one or two real stories. Be specific.")
+                 "Pick the one or two real stories. Be specific. "
+                 "If the 'Sustained CG-trending AND climbing' list above has entries, "
+                 "lead with those — that intersection (persistent attention + rank lift "
+                 "both short and long term) is the highest-conviction signal we surface. "
+                 "Name those coins by symbol and say what their setup is.")
     return "\n".join(lines)
 
 

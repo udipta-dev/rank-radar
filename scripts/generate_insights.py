@@ -214,51 +214,56 @@ def build_trending_msg(doc: dict) -> str:
                          f"last 24h {f['recentHits']} hits")
         lines.append("")
 
-    # cross-source buzz: CG + CMC trending + Farcaster $cashtag + Reddit $cashtag
+    # CEX-side cross-source: CG trending + CMC trending only.
+    # We deliberately exclude Farcaster and Reddit from this block. Farcaster
+    # is a narrow corner of crypto-social and treating its cashtag silence
+    # as "social silence" produced wrong calls (e.g. PENGU is loud on X but
+    # quiet on FC). Twitter signal will be added later via burner X login;
+    # until then the AI gets CEX-side data only.
     cross = doc.get("crossSource") or {}
     cross_per = cross.get("perCoin") or {}
     if cross_per:
-        ranked = sorted(
-            cross_per.values(),
-            key=lambda c: (-c.get("sourceCount24h", 0), -c.get("totalMentions24h", 0)),
-        )
-        top_multi = [c for c in ranked if c.get("sourceCount24h", 0) >= 2][:10]
-        lines.append("Cross-source consensus (last 24h, cashtag-only on socials):")
-        lines.append("  format: SYMBOL sources/4 (CG, CMC, FC, Reddit)")
-        for c in top_multi:
+        # rank by CG + CMC 24h combined, ignore social columns for the AI
+        def cex_total(c):
+            return c["cg"]["d1"] + c["cmc"]["d1"]
+
+        ranked = sorted(cross_per.values(), key=lambda c: -cex_total(c))
+        top_cex = [c for c in ranked if cex_total(c) >= 1][:12]
+        lines.append("CEX-side trending presence (last 24h, CG + CMC only):")
+        for c in top_cex:
             lines.append(
-                f"  {c['symbol']} {c.get('sourceCount24h',0)}/4 "
-                f"(CG {c['cg']['d1']}, CMC {c['cmc']['d1']}, "
-                f"FC {c['farcaster']['d1']}, R {c['reddit']['d1']})"
+                f"  {c['symbol']}: CG {c['cg']['d1']}, CMC {c['cmc']['d1']}"
             )
-        # CEX-only signal: CG/CMC nonzero but social zero
-        cex_only = [
+        # CG vs CMC divergence — meaningful CEX-side manipulation tell
+        cg_only = [
             c for c in ranked
-            if (c["cg"]["d1"] + c["cmc"]["d1"]) >= 3 and (c["farcaster"]["d1"] + c["reddit"]["d1"]) == 0
+            if c["cg"]["d1"] >= 5 and c["cmc"]["d1"] == 0
         ][:6]
-        if cex_only:
-            lines.append("")
-            lines.append("Loud on CEX trending (CG/CMC) but SILENT on social (Farcaster/Reddit):")
-            for c in cex_only:
-                lines.append(f"  {c['symbol']}: CG {c['cg']['d1']}, CMC {c['cmc']['d1']}, socials 0")
-        # Social-only signal: socials nonzero, CG/CMC zero
-        social_only = [
+        cmc_only = [
             c for c in ranked
-            if (c["farcaster"]["d1"] + c["reddit"]["d1"]) >= 3 and (c["cg"]["d1"] + c["cmc"]["d1"]) == 0
+            if c["cmc"]["d1"] >= 5 and c["cg"]["d1"] == 0
         ][:6]
-        if social_only:
+        if cg_only:
             lines.append("")
-            lines.append("Loud on socials but NOT yet on CEX trending lists:")
-            for c in social_only:
-                lines.append(f"  {c['symbol']}: FC {c['farcaster']['d1']}, Reddit {c['reddit']['d1']}, CEX 0")
+            lines.append("Loud on CG but absent from CMC trending:")
+            for c in cg_only:
+                lines.append(f"  {c['symbol']}: CG {c['cg']['d1']}, CMC 0")
+        if cmc_only:
+            lines.append("")
+            lines.append("Loud on CMC but absent from CG trending (often a CMC manipulation tell):")
+            for c in cmc_only:
+                lines.append(f"  {c['symbol']}: CMC {c['cmc']['d1']}, CG 0")
         lines.append("")
 
-    lines.append("Question: What's heating up vs what's rolling over? "
-                 "Distinguish sustained attention from paid push or single-event pumps. "
-                 "Use the cross-source data to call out convergence (multiple sources agree, "
-                 "strongest signal) AND divergence (loud on CEX trending but silent on socials = "
-                 "likely manipulation; loud on socials but absent from CEX trending = potential "
-                 "early signal). Call out anything PENGU-like that has held attention for months.")
+    lines.append("Question: What's heating up vs what's rolling over on CEX trending lists? "
+                 "Distinguish sustained attention from single-event pumps. "
+                 "Use the CG persistence + CG vs CMC divergence data above. "
+                 "If a coin is loud on CMC but absent from CG, flag it as a likely CEX-side "
+                 "manipulation tell. Call out anything PENGU-like that has held CG attention "
+                 "for months. CRITICAL CONSTRAINT: we currently do NOT have Twitter, "
+                 "general 'social media' or 'social sentiment' data. Do not speak about "
+                 "'social silence', 'social loudness', or 'X buzz' at all. Stay strictly "
+                 "on CG and CMC trending evidence.")
     return "\n".join(lines)
 
 

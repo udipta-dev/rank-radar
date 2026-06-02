@@ -344,13 +344,31 @@ def main():
     if not API_KEY:
         print("warning: GEMINI_API_KEY not set, writing empty insights")
 
-    insights = {}
-    for label, builder in [
+    builders = [
         ("home", build_home_msg),
         ("movements", build_movements_msg),
         ("trending", build_trending_msg),
         ("narratives", build_narratives_msg),
-    ]:
+    ]
+
+    # INSIGHTS_ONLY lets an intraday refresh regenerate just the insights that
+    # actually have fresh inputs. Trending captures update every 30 min, so
+    # `home` (its sustained-risers block reads live trending counts) and
+    # `trending` are worth refreshing intraday. `movements` and `narratives`
+    # read once-a-day rank/sector tables, so regenerating them intraday would
+    # only reword identical data. When the var is set we preserve the existing
+    # text for the untouched insights. Empty/unset = regenerate all four.
+    only_env = os.environ.get("INSIGHTS_ONLY", "").strip()
+    only = {s.strip() for s in only_env.split(",") if s.strip()} if only_env else None
+
+    insights = dict(doc.get("insights") or {}) if only else {}
+    if only:
+        print(f"INSIGHTS_ONLY active: regenerating {sorted(only)}, "
+              f"preserving {sorted(set(l for l, _ in builders) - only)}")
+
+    for label, builder in builders:
+        if only and label not in only:
+            continue
         msg = builder(doc)
         text = call_gemini(msg, label)
         if text:

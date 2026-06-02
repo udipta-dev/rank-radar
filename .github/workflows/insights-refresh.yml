@@ -1,11 +1,21 @@
-name: Refresh AI insights (on-demand)
+name: Refresh AI insights (on-demand + intraday)
 
-# Lightweight workflow: regenerates the 4 insights using the latest data
-# without the heavy daily refresh (no CMC scrape, no analysis). Pulls
-# trending-data so trending insights see freshest captures, runs Gemini,
-# commits web.json. Trigger anytime from GH UI or `gh workflow run`.
+# Lightweight workflow: regenerates insights using the latest data without the
+# heavy daily refresh (no CMC scrape, no analysis). Pulls trending-data so the
+# trending section is recomputed from the freshest captures, runs Gemini,
+# commits web.json.
+#
+# Two trigger modes:
+#   - schedule (09:00 & 15:00 UTC = ~14:30 & 20:30 IST): intraday refresh of the
+#     trending-driven insights only (home + trending). Combined with the daily
+#     refresh at 02:00 UTC, that's 3 home/trending refreshes per day. movements
+#     and narratives are left untouched intraday because their inputs (rank +
+#     sector tables) only change once a day.
+#   - workflow_dispatch: full regen of all four insights, anytime.
 
 on:
+  schedule:
+    - cron: "0 9,15 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -42,6 +52,9 @@ jobs:
       - name: Generate AI insights (Gemini Flash)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Scheduled intraday runs refresh only the trending-driven insights
+          # (home + trending). Manual dispatch leaves this empty = all four.
+          INSIGHTS_ONLY: ${{ github.event_name == 'schedule' && 'home,trending' || '' }}
         run: python scripts/generate_insights.py
 
       - name: Commit + push if changed

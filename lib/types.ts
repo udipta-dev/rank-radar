@@ -143,6 +143,20 @@ export type BearWindow = {
   troughMcap: number;
 };
 
+export type Market = {
+  totalMcapUsd: number | null;
+  change24hPct: number | null;
+  change7dPct: number | null;
+  change30dPct: number | null;
+  btcDominance: number | null;
+  ethDominance: number | null;
+  totalVolUsd: number | null;
+  regime: "risk-off" | "risk-on" | "neutral" | "unknown";
+  latestTs: string | null;
+  sparkline: number[];
+  snapshotCount: number;
+};
+
 export type WebData = {
   metadata: {
     generatedAt: string;
@@ -168,6 +182,7 @@ export type WebData = {
   momentum: Record<string, Momentum>;
   trending: TrendingData;
   crossSource?: CrossSourceBuzz;
+  market?: Market;
   heatmap: {
     symbols: string[];
     dates: string[];

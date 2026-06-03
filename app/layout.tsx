@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import Nav from "@/components/Nav";
+import MarketStrip from "@/components/MarketStrip";
+import { getData } from "@/lib/data";
 import "./globals.css";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
@@ -78,10 +80,12 @@ const datasetSchema = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const { market } = getData();
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable}`}>
       <body>
         <Nav />
+        <MarketStrip market={market} variant="strip" />
         <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
         <footer className="mx-auto max-w-7xl px-4 py-8 text-xs text-[var(--fg-dim)] border-t border-[var(--border)] mt-12">
           Data from CoinMarketCap weekly historical snapshots and CoinGecko trending. Personal use only.

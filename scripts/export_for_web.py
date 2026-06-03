@@ -163,6 +163,84 @@ def compute_cross_source_buzz(trending_root: Path, now: datetime | None = None) 
     }
 
 
+def compute_market(market_dir: Path, now: datetime | None = None) -> dict:
+    """Global market regime from data/market/*.json snapshots.
+
+    The latest snapshot gives total market cap, CG's own 24h change, and BTC/ETH
+    dominance. 7d/30d change are computed from our own capture history (null
+    until we have a snapshot that old). `regime` is a coarse risk label off the
+    24h move — this is what the AI prompts and the site banner read. Rank is a
+    relative measure, so this regime is the denominator the rest of the
+    dashboard is read against.
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+
+    snaps: list[tuple[datetime, dict]] = []
+    if market_dir.exists():
+        for f in sorted(market_dir.glob("*.json")):
+            try:
+                doc = json.loads(f.read_text())
+            except Exception:
+                continue
+            for s in doc.get("snapshots", []):
+                if s.get("total_mcap_usd") is None:
+                    continue
+                try:
+                    ts = datetime.fromisoformat(s["ts"].replace("Z", "+00:00"))
+                except Exception:
+                    continue
+                snaps.append((ts, s))
+    snaps.sort(key=lambda kv: kv[0])
+
+    if not snaps:
+        return {
+            "totalMcapUsd": None, "change24hPct": None, "change7dPct": None,
+            "change30dPct": None, "btcDominance": None, "ethDominance": None,
+            "totalVolUsd": None, "regime": "unknown", "latestTs": None,
+            "sparkline": [], "snapshotCount": 0,
+        }
+
+    latest_ts, latest = snaps[-1]
+    mcap = latest["total_mcap_usd"]
+
+    def change_over(delta: timedelta):
+        """Pct change of total mcap vs the closest snapshot at/before now-delta.
+        None until we have history that old (don't fabricate a baseline)."""
+        target = latest_ts - delta
+        ref = None
+        for ts, s in snaps:
+            if ts <= target:
+                ref = s
+            else:
+                break
+        if ref and ref.get("total_mcap_usd"):
+            base = ref["total_mcap_usd"]
+            return round((mcap - base) / base * 100, 2)
+        return None
+
+    change_24h = latest.get("change_24h_pct")
+    if isinstance(change_24h, (int, float)):
+        regime = "risk-off" if change_24h <= -3 else "risk-on" if change_24h >= 3 else "neutral"
+    else:
+        regime = "unknown"
+
+    return {
+        "totalMcapUsd": mcap,
+        "change24hPct": round(change_24h, 2) if isinstance(change_24h, (int, float)) else None,
+        "change7dPct": change_over(timedelta(days=7)),
+        "change30dPct": change_over(timedelta(days=30)),
+        "btcDominance": round(latest["btc_dom"], 1) if latest.get("btc_dom") is not None else None,
+        "ethDominance": round(latest["eth_dom"], 1) if latest.get("eth_dom") is not None else None,
+        "totalVolUsd": latest.get("total_vol_usd"),
+        "regime": regime,
+        "latestTs": latest_ts.isoformat().replace("+00:00", "Z"),
+        # last ~72 captures ≈ 36h at the 30-min cadence
+        "sparkline": [round(s["total_mcap_usd"]) for _, s in snaps[-72:]],
+        "snapshotCount": len(snaps),
+    }
+
+
 def compute_trending(trending_dir: Path, now: datetime | None = None) -> dict:
     """Read all trending snapshots from trending_dir/*.json (one file per day,
     each with a list of 15-min snapshots) and compute per-coin appearance metrics:
@@ -520,6 +598,11 @@ def main():
     cross_source = compute_cross_source_buzz(TRENDING_DIR.parent)
     print(f"  cross-source: snapshots {cross_source['snapshotCountsBySource']}, "
           f"{len(cross_source['perCoin'])} coins with at least one mention")
+    market = compute_market(TRENDING_DIR.parent / "market")
+    _mc = market["totalMcapUsd"]
+    print(f"  market: {market['snapshotCount']} snapshots, "
+          f"mcap {('$%.3fT' % (_mc/1e12)) if _mc else 'n/a'}, "
+          f"24h {market['change24hPct']}, regime {market['regime']}")
 
     doc = {
         "metadata": {
@@ -537,6 +620,7 @@ def main():
         "momentum": momentum,
         "trending": trending,
         "crossSource": cross_source,
+        "market": market,
         "heatmap": heatmap,
         "coverage": coverage_records,
         "summaryMd": summary_md,

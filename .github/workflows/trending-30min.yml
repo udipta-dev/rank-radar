@@ -56,6 +56,12 @@ jobs:
         run: python main-checkout/scripts/scrape_farcaster.py
         continue-on-error: true
 
+      - name: Scrape global market cap (CoinGecko /global)
+        env:
+          TRENDING_OUT_DIR: ${{ github.workspace }}/trending-checkout/data/trending
+        run: python main-checkout/scripts/scrape_market.py
+        continue-on-error: true
+
       # Reddit step removed: Reddit blocks every approach we tried from GH
       # Actions data-center IPs (including Scrapling + Camoufox stealth).
       # scripts/scrape_reddit.py still works from residential IPs and is

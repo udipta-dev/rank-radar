@@ -1,6 +1,7 @@
 import Link from "next/link";
 import CoinSearch from "@/components/CoinSearch";
 import MarketTable from "@/components/MarketTable";
+import MarketStrip from "@/components/MarketStrip";
 import InsightCard from "@/components/InsightCard";
 import { getData } from "@/lib/data";
 import { fmtMcap, fmtDelta, fmtDate } from "@/lib/format";
@@ -66,7 +67,7 @@ function TopList({
 }
 
 export default function Home() {
-  const { metadata: meta, tables, nameMap, currentMetrics, momentum, insights } = getData();
+  const { metadata: meta, tables, nameMap, currentMetrics, momentum, insights, market } = getData();
   const bear = meta.bearWindow;
 
   return (
@@ -80,6 +81,8 @@ export default function Home() {
       </header>
 
       <InsightCard text={insights?.home} generatedAt={meta.generatedAt} />
+
+      <MarketStrip market={market} variant="block" />
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat

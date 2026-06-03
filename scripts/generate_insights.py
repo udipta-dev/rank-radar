@@ -97,6 +97,35 @@ def _coin_label(symbol: str, name_map: dict) -> str:
     return f"{symbol} ({n})" if n and n != symbol else symbol
 
 
+def _market_line(doc: dict) -> str | None:
+    """One-line global market regime for prompt context, or None if no market
+    data yet. Rank is relative, so this is the denominator the AI must read
+    every rank move against."""
+    m = doc.get("market") or {}
+    mcap = m.get("totalMcapUsd")
+    if not mcap:
+        return None
+    parts = [f"total crypto mcap ${mcap / 1e12:.2f}T"]
+    for key, lbl in (("change24hPct", "24h"), ("change7dPct", "7d"), ("change30dPct", "30d")):
+        v = m.get(key)
+        if isinstance(v, (int, float)):
+            parts.append(f"{v:+.1f}% {lbl}")
+    btc = m.get("btcDominance")
+    dom = f", BTC dominance {btc:.0f}%" if isinstance(btc, (int, float)) else ""
+    return f"Market regime: {', '.join(parts)} ({m.get('regime', 'unknown')}){dom}."
+
+
+# Shared interpretation rule. Rank is a *relative* measure (top-200 by mcap), so
+# a rank climb means different things in different tapes.
+_REL_STRENGTH_RULE = (
+    "Rank is relative: in a risk-off tape a coin climbing rank fell LESS than its "
+    "peers, which is genuine relative strength worth weighting heavily; in a risk-on "
+    "rip a rank climb is partly just beta. Read every rank move against the market "
+    "regime line above, and flag coins climbing against a falling market as the "
+    "highest-conviction strength."
+)
+
+
 def build_home_msg(doc: dict) -> str:
     meta = doc["metadata"]
     bw = meta["bearWindow"]
@@ -123,6 +152,9 @@ def build_home_msg(doc: dict) -> str:
                  f"{meta['coinCount']} coins, range {meta['firstDate']} to {meta['lastDate']}.")
     lines.append(f"Auto-detected bear window: {bw['peak'][:10]} to {bw['trough'][:10]}, "
                  f"top-200 mcap fell {bw['drawdownPct']:.1f}%.")
+    mkt = _market_line(doc)
+    if mkt:
+        lines.append(mkt)
     lines.append("")
     lines.append("Top 8 rank climbers last 7 days (current rank, 7d delta):")
     for sym, m in climbers_7d:
@@ -178,7 +210,8 @@ def build_home_msg(doc: dict) -> str:
                  "If the 'Sustained CG-trending AND climbing' list above has entries, "
                  "lead with those — that intersection (persistent attention + rank lift "
                  "both short and long term) is the highest-conviction signal we surface. "
-                 "Name those coins by symbol and say what their setup is.")
+                 "Name those coins by symbol and say what their setup is. "
+                 + _REL_STRENGTH_RULE)
     return "\n".join(lines)
 
 
@@ -198,6 +231,10 @@ def build_movements_msg(doc: dict) -> str:
         return out
 
     lines = ["Page: rank movements (climbers and decliners).", ""]
+    mkt = _market_line(doc)
+    if mkt:
+        lines.append(mkt)
+        lines.append("")
     lines.append("Top 10 structural climbers, full 2-year window:")
     lines.extend(fmt_rows(tables.get("climbersOverall", [])[:10]))
     lines.append("")
@@ -209,7 +246,8 @@ def build_movements_msg(doc: dict) -> str:
     lines.append("")
     lines.append("Question: What patterns or narratives explain these moves? "
                  "Pick one or two stories worth telling. Mention specific coins by symbol. "
-                 "Flag any stale coins (likely delisted or nuked) explicitly.")
+                 "Flag any stale coins (likely delisted or nuked) explicitly. "
+                 + _REL_STRENGTH_RULE)
     return "\n".join(lines)
 
 

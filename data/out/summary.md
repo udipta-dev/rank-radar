@@ -1,8 +1,8 @@
 # Structural rank-climber summary
 
-Dataset: CMC weekly top-200 snapshots, 2024-06-02 to 2026-06-03 (114 snapshots, 367 coins post-filter).
+Dataset: CMC weekly top-200 snapshots, 2024-06-02 to 2026-06-04 (115 snapshots, 367 coins post-filter).
 
-Bear window used for relative-strength screen: 2025-10-05 to 2026-03-08 (top-200 mcap drop -49.5%).
+Bear window used for relative-strength screen: 2025-10-05 to 2026-06-04 (top-200 mcap drop -50.4%).
 
 ## 10 most interesting coins
 
@@ -11,103 +11,102 @@ Bear window used for relative-strength screen: 2025-10-05 to 2026-03-08 (top-200
 - First seen in dataset: 2025-11-16 at rank 197
 - Best rank reached: 77
 - Worst rank reached: 197
-- Current rank (2026-06-03): 98
-- Full-window rank delta: +99
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +120  (rank 197 -> 77)
-- Weeks present: 38
-- Note: current rank is 21 below best historical. Possible quiet-accumulator.
+- Current rank (2026-06-04): 100
+- Full-window rank delta: +97
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +97  (rank 197 -> 100)
+- Weeks present: 39
+- Note: current rank is 23 below best historical. Possible quiet-accumulator.
 
-### DCR (Decred)
+### 币安人生 (币安人生)
 
-- First seen in dataset: 2024-06-09 at rank 196
-- Best rank reached: 79
+- First seen in dataset: 2026-01-11 at rank 189
+- Best rank reached: 70
 - Worst rank reached: 200
-- Current rank (2026-06-03): 124
-- Full-window rank delta: +72
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +86  (rank 166 -> 80)
-- Weeks present: 84
-- Note: current rank is 45 below best historical. Possible quiet-accumulator.
-
-### BARD (Lombard)
-
-- First seen in dataset: 2025-09-21 at rank 190
-- Best rank reached: 122
-- Worst rank reached: 200
-- Current rank (2026-04-19): 200
-- Full-window rank delta: -10
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +65  (rank 187 -> 122)
-- Weeks present: 26
-- Note: current rank is 78 below best historical. Possible quiet-accumulator.
-
-### JST (JUST)
-
-- First seen in dataset: 2024-06-16 at rank 200
-- Best rank reached: 64
-- Worst rank reached: 200
-- Current rank (2026-06-03): 68
-- Full-window rank delta: +132
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +82  (rank 165 -> 83)
-- Weeks present: 112
-
-### STABLE (Stable)
-
-- First seen in dataset: 2025-12-21 at rank 154
-- Best rank reached: 61
-- Worst rank reached: 154
-- Current rank (2026-06-03): 65
-- Full-window rank delta: +89
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +78  (rank 154 -> 76)
-- Weeks present: 33
-
-### MORPHO (Morpho)
-
-- First seen in dataset: 2024-12-22 at rank 186
-- Best rank reached: 53
-- Worst rank reached: 186
-- Current rank (2026-06-03): 59
-- Full-window rank delta: +127
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +51  (rank 114 -> 63)
-- Weeks present: 85
-
-### ZRO (LayerZero)
-
-- First seen in dataset: 2024-06-23 at rank 95
-- Best rank reached: 69
-- Worst rank reached: 181
-- Current rank (2026-06-03): 93
-- Full-window rank delta: +2
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +51  (rank 122 -> 71)
-- Weeks present: 111
-- Note: current rank is 24 below best historical. Possible quiet-accumulator.
-
-### GNO (Gnosis)
-
-- First seen in dataset: 2024-06-02 at rank 99
-- Best rank reached: 83
-- Worst rank reached: 157
-- Current rank (2026-06-03): 111
-- Full-window rank delta: -12
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +48  (rank 146 -> 98)
-- Weeks present: 114
-- Note: current rank is 28 below best historical. Possible quiet-accumulator.
-
-### B (BUILDon)
-
-- First seen in dataset: 2025-07-06 at rank 126
-- Best rank reached: 92
-- Worst rank reached: 196
-- Current rank (2026-06-03): 129
-- Full-window rank delta: -3
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +43  (rank 176 -> 133)
-- Weeks present: 54
-- Note: current rank is 37 below best historical. Possible quiet-accumulator.
+- Current rank (2026-06-04): 70
+- Full-window rank delta: +119
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +119  (rank 189 -> 70)
+- Weeks present: 24
 
 ### DASH (Dash)
 
 - First seen in dataset: 2024-06-02 at rank 196
 - Best rank reached: 64
 - Worst rank reached: 196
-- Current rank (2026-06-03): 81
-- Full-window rank delta: +115
-- Bear-window rank delta (2025-10-05 -> 2026-03-08): +43  (rank 133 -> 90)
-- Weeks present: 114
+- Current rank (2026-06-04): 84
+- Full-window rank delta: +112
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +49  (rank 133 -> 84)
+- Weeks present: 115
+- Note: current rank is 20 below best historical. Possible quiet-accumulator.
+
+### JST (JUST)
+
+- First seen in dataset: 2024-06-16 at rank 200
+- Best rank reached: 64
+- Worst rank reached: 200
+- Current rank (2026-06-04): 69
+- Full-window rank delta: +131
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +96  (rank 165 -> 69)
+- Weeks present: 113
+
+### DCR (Decred)
+
+- First seen in dataset: 2024-06-09 at rank 196
+- Best rank reached: 79
+- Worst rank reached: 200
+- Current rank (2026-06-04): 119
+- Full-window rank delta: +77
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +47  (rank 166 -> 119)
+- Weeks present: 85
+- Note: current rank is 40 below best historical. Possible quiet-accumulator.
+
+### STABLE (Stable)
+
+- First seen in dataset: 2025-12-21 at rank 154
+- Best rank reached: 61
+- Worst rank reached: 154
+- Current rank (2026-06-04): 64
+- Full-window rank delta: +90
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +90  (rank 154 -> 64)
+- Weeks present: 34
+
+### AKT (Akash Network)
+
+- First seen in dataset: 2024-06-02 at rank 82
+- Best rank reached: 72
+- Worst rank reached: 200
+- Current rank (2026-06-04): 134
+- Full-window rank delta: -52
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +45  (rank 179 -> 134)
+- Weeks present: 109
+- Note: current rank is 62 below best historical. Possible quiet-accumulator.
+
+### MORPHO (Morpho)
+
+- First seen in dataset: 2024-12-22 at rank 186
+- Best rank reached: 53
+- Worst rank reached: 186
+- Current rank (2026-06-04): 60
+- Full-window rank delta: +126
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +54  (rank 114 -> 60)
+- Weeks present: 86
+
+### B (BUILDon)
+
+- First seen in dataset: 2025-07-06 at rank 126
+- Best rank reached: 92
+- Worst rank reached: 196
+- Current rank (2026-06-04): 130
+- Full-window rank delta: -4
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +46  (rank 176 -> 130)
+- Weeks present: 55
+- Note: current rank is 38 below best historical. Possible quiet-accumulator.
+
+### ZEC (Zcash)
+
+- First seen in dataset: 2024-06-02 at rank 161
+- Best rank reached: 11
+- Worst rank reached: 169
+- Current rank (2026-06-04): 11
+- Full-window rank delta: +150
+- Bear-window rank delta (2025-10-05 -> 2026-06-04): +32  (rank 43 -> 11)
+- Weeks present: 115

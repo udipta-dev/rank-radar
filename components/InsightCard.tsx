@@ -11,7 +11,12 @@ type Props = {
 export default function InsightCard({ text, generatedAt }: Props) {
   if (!text || !text.trim()) return null;
 
-  const stamp = generatedAt ? generatedAt.slice(0, 10) : "";
+  // generatedAt is a UTC ISO string (…Z). Slice the parts directly rather than
+  // going through Date() so the rendering server's local timezone can't shift
+  // the displayed time. -> "2026-06-05 17:48 UTC"
+  const day = generatedAt ? generatedAt.slice(0, 10) : "";
+  const hm = generatedAt ? generatedAt.slice(11, 16) : "";
+  const stamp = day ? (hm ? `Updated ${day} ${hm} UTC` : `Updated ${day}`) : "";
 
   return (
     <section

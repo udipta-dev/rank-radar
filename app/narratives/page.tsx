@@ -24,7 +24,7 @@ export default function NarrativesPage() {
         </p>
       </header>
 
-      <InsightCard text={d.insights?.narratives} generatedAt={d.metadata.generatedAt} />
+      <InsightCard text={d.insights?.narratives} generatedAt={d.insightsGeneratedAt?.narratives ?? d.metadata.generatedAt} />
 
       {sub?.latestNow && sub.latestNow.length > 0 && (
         <section className="border border-[var(--border)] bg-[var(--bg-elev)] rounded-lg p-4">

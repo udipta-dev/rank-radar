@@ -13,6 +13,7 @@ import json
 import os
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -400,6 +401,10 @@ def main():
     only = {s.strip() for s in only_env.split(",") if s.strip()} if only_env else None
 
     insights = dict(doc.get("insights") or {}) if only else {}
+    # Per-insight UTC generation timestamps, preserved alongside the text for
+    # any note we're NOT regenerating this run. Lets each Analyst note show its
+    # own real "written at" time instead of the (every-2h) data-publish time.
+    stamps = dict(doc.get("insightsGeneratedAt") or {}) if only else {}
     if only:
         print(f"INSIGHTS_ONLY active: regenerating {sorted(only)}, "
               f"preserving {sorted(set(l for l, _ in builders) - only)}")
@@ -411,9 +416,11 @@ def main():
         text = call_gemini(msg, label)
         if text:
             print(f"  [{label}] {len(text.split())} words")
+            stamps[label] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         insights[label] = text
 
     doc["insights"] = insights
+    doc["insightsGeneratedAt"] = stamps
     WEB_JSON.write_text(json.dumps(doc, default=str))
     nonempty = sum(1 for v in insights.values() if v)
     print(f"wrote {WEB_JSON} with {nonempty}/4 insights populated")

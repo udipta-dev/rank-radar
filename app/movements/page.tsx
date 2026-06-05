@@ -47,7 +47,7 @@ export default function MovementsPage() {
         </p>
       </div>
 
-      <InsightCard text={d.insights?.movements} generatedAt={d.metadata.generatedAt} />
+      <InsightCard text={d.insights?.movements} generatedAt={d.insightsGeneratedAt?.movements ?? d.metadata.generatedAt} />
 
       <div className="flex gap-2 border-b border-[var(--border)] pb-3 flex-wrap">
         {tabs.map((t) => (

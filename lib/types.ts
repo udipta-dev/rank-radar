@@ -196,4 +196,6 @@ export type WebData = {
     trending?: string;
     narratives?: string;
   };
+  // UTC ISO timestamp per insight key, set when that note was actually generated
+  insightsGeneratedAt?: Record<string, string>;
 };

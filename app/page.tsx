@@ -67,7 +67,7 @@ function TopList({
 }
 
 export default function Home() {
-  const { metadata: meta, tables, nameMap, currentMetrics, momentum, insights, market } = getData();
+  const { metadata: meta, tables, nameMap, currentMetrics, momentum, insights, insightsGeneratedAt, market } = getData();
   const bear = meta.bearWindow;
 
   return (
@@ -80,7 +80,7 @@ export default function Home() {
         <CoinSearch nameMap={nameMap} />
       </header>
 
-      <InsightCard text={insights?.home} generatedAt={meta.generatedAt} />
+      <InsightCard text={insights?.home} generatedAt={insightsGeneratedAt?.home ?? meta.generatedAt} />
 
       <MarketStrip market={market} variant="block" />
 

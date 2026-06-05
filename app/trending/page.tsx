@@ -79,7 +79,7 @@ export default function TrendingPage() {
         </p>
       </header>
 
-      <InsightCard text={d.insights?.trending} generatedAt={d.metadata.generatedAt} />
+      <InsightCard text={d.insights?.trending} generatedAt={d.insightsGeneratedAt?.trending ?? d.metadata.generatedAt} />
 
       {/* Right now */}
       {trending.trendingNow.length > 0 && (

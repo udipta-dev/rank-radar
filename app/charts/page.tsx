@@ -2,14 +2,26 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import TrajectoryChart from "@/components/TrajectoryChart";
-import RankHistogram from "@/components/RankHistogram";
-import CoverageChart from "@/components/CoverageChart";
-import TrendingHeatmap from "@/components/TrendingHeatmap";
-import DivergenceChart from "@/components/DivergenceChart";
-import Heatmap from "@/components/Heatmap";
+import dynamic from "next/dynamic";
 import type { TrendingCoin, WebData } from "@/lib/types";
 import data from "@/data/web.json";
+
+// Render the visualizations client-only (ssr: false). They draw thousands of
+// SVG/heatmap nodes — the trending heatmap alone covers every coin × every
+// 30-min snapshot and grows ~48 columns/day — and server-prerendering that DOM
+// blew past Vercel's 19 MB ISR limit (FALLBACK_BODY_TOO_LARGE). These charts
+// have no SEO value as server HTML and recharts wants the client anyway, so
+// deferring them keeps the prerendered page a tiny shell that can't outgrow the
+// limit again.
+const ChartLoading = () => (
+  <div className="h-64 grid place-items-center text-xs text-[var(--fg-dim)]">Loading chart…</div>
+);
+const TrajectoryChart = dynamic(() => import("@/components/TrajectoryChart"), { ssr: false, loading: ChartLoading });
+const RankHistogram = dynamic(() => import("@/components/RankHistogram"), { ssr: false, loading: ChartLoading });
+const CoverageChart = dynamic(() => import("@/components/CoverageChart"), { ssr: false, loading: ChartLoading });
+const TrendingHeatmap = dynamic(() => import("@/components/TrendingHeatmap"), { ssr: false, loading: ChartLoading });
+const DivergenceChart = dynamic(() => import("@/components/DivergenceChart"), { ssr: false, loading: ChartLoading });
+const Heatmap = dynamic(() => import("@/components/Heatmap"), { ssr: false, loading: ChartLoading });
 
 const d = data as unknown as WebData;
 

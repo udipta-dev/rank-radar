@@ -13,8 +13,11 @@ on:
 permissions:
   contents: write
 
+# Shared group with daily-refresh + insights-refresh: all three commit
+# data/web.json on main, so they must run one-at-a-time (never overlap) or
+# they race and the loser hits an unresolvable rebase conflict on the blob.
 concurrency:
-  group: trending-publish
+  group: main-web-json
   cancel-in-progress: false
 
 jobs:
